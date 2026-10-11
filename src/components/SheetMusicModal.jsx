@@ -203,12 +203,8 @@ export default function SheetMusicModal({
     >
       {/* Top Modal Sub-Bar (Sits directly under main app navbar) */}
       <div className="flex items-center justify-between gap-3 px-3 py-2 sm:px-5 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
-        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 min-w-0 truncate">
-          Sheet Music Score
-        </div>
-
-        {/* Hint banner (no bulb icon) */}
-        <div className="text-center text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 truncate">
+        {/* Hint banner */}
+        <div className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 truncate">
           <span className="font-medium text-slate-900 dark:text-slate-200">Tap sheet to zoom</span>{' '}
           <span className="hidden sm:inline">({ZOOM_LABELS[zoomIndex]}) • Drag to pan</span>
         </div>
