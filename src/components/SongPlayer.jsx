@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, FileText, Download } from 'lucide-react';
 import SectionSelector from './SectionSelector';
 import FocusSelector from './FocusSelector';
 import Mixer from './Mixer';
@@ -20,6 +20,14 @@ export default function SongPlayer({ song, onBackToSongs }) {
     setActiveSectionId(newSection.id);
   };
 
+  // Support string or array format for sheetMusic / pdf
+  const rawSheetMusic = song.sheetMusic || song.pdf;
+  const sheetMusicList = Array.isArray(rawSheetMusic)
+    ? rawSheetMusic
+    : rawSheetMusic
+    ? [{ name: 'Sheet Music (PDF)', file: rawSheetMusic }]
+    : [];
+
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 pb-36">
       {/* Top Navigation & Song Details */}
@@ -32,7 +40,7 @@ export default function SongPlayer({ song, onBackToSongs }) {
           <span>Back to Songs</span>
         </button>
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-white">
@@ -49,11 +57,29 @@ export default function SongPlayer({ song, onBackToSongs }) {
             </p>
           </div>
 
-          {song.notes && (
-            <div className="text-xs text-slate-600 dark:text-slate-400 sm:text-right max-w-xs italic bg-slate-50 dark:bg-slate-950/40 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800/80">
-              {song.notes}
-            </div>
-          )}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {sheetMusicList.map((item, idx) => (
+              <a
+                key={idx}
+                href={item.file}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+                className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800/60 font-semibold text-xs sm:text-sm transition shadow-sm"
+                title="Open or download PDF Sheet Music"
+              >
+                <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                <span>{item.name || 'Sheet Music (PDF)'}</span>
+                <Download className="w-3.5 h-3.5 opacity-75" />
+              </a>
+            ))}
+
+            {song.notes && (
+              <div className="text-xs text-slate-600 dark:text-slate-400 sm:text-right max-w-xs italic bg-slate-50 dark:bg-slate-950/40 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-800/80">
+                {song.notes}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 

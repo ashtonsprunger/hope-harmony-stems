@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Disc, Layers } from 'lucide-react';
+import { Play, Disc, Layers, FileText } from 'lucide-react';
 
 export default function SongList({ songs, onSelectSong }) {
   const songList = songs || [];
@@ -63,6 +63,13 @@ export default function SongList({ songs, onSelectSong }) {
                       <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700/50">
                         {partsCount} harmony {partsCount === 1 ? 'part' : 'parts'}
                       </span>
+
+                      {(song.sheetMusic || song.pdf) && (
+                        <span className="text-xs px-2.5 py-1 rounded-lg bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/40 flex items-center gap-1 font-medium">
+                          <FileText className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                          PDF Score
+                        </span>
+                      )}
                     </div>
 
                     <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-600/30 group-hover:bg-blue-600 text-blue-600 dark:text-blue-300 group-hover:text-white flex items-center justify-center transition shadow-sm shrink-0">
