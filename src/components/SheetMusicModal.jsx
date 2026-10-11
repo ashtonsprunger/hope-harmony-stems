@@ -6,7 +6,6 @@ import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
 
 const ZOOM_LEVELS = [1, 1.6, 2.4];
-const ZOOM_LABELS = ['1x (Fit)', '1.6x', '2.4x'];
 
 export default function SheetMusicModal({
   isOpen,
@@ -205,8 +204,7 @@ export default function SheetMusicModal({
       <div className="flex items-center justify-between gap-3 px-3 py-2 sm:px-5 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
         {/* Hint banner */}
         <div className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 truncate">
-          <span className="font-medium text-slate-900 dark:text-slate-200">Tap sheet to zoom</span>{' '}
-          <span className="hidden sm:inline">({ZOOM_LABELS[zoomIndex]}) • Drag to pan</span>
+          <span className="font-medium text-slate-900 dark:text-slate-200">Tap sheet to zoom</span>
         </div>
 
         {/* Zoom Level & Actions */}
