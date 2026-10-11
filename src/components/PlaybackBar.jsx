@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, RotateCcw, RotateCw, Square, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Play, Pause, RotateCcw, RotateCw, Square, Loader2, AlertCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 
 function formatTime(secs) {
   if (isNaN(secs) || secs < 0) return '0:00';
@@ -23,6 +23,9 @@ export default function PlaybackBar({
   numPages = 1,
   onPrevPage,
   onNextPage,
+  // Sheet Music toggle
+  hasSheetMusic = false,
+  onToggleSheet,
 }) {
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -94,7 +97,7 @@ export default function PlaybackBar({
         </div>
 
         {/* Transport Controls */}
-        <div className="flex items-center justify-center gap-4 sm:gap-6">
+        <div className="flex items-center justify-center gap-2.5 sm:gap-5 flex-wrap">
           {/* Reset to Start */}
           <button
             onClick={() => onSeek(0)}
@@ -109,7 +112,7 @@ export default function PlaybackBar({
           <button
             onClick={() => onQuickJump(-5)}
             disabled={isLoading || duration === 0}
-            className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 dark:border-slate-700/80 active:scale-95 transition disabled:opacity-40 font-semibold text-xs sm:text-sm shadow-sm"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 dark:border-slate-700/80 active:scale-95 transition disabled:opacity-40 font-semibold text-xs sm:text-sm shadow-sm"
             title="Rewind 5 seconds"
           >
             <RotateCcw className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -140,12 +143,29 @@ export default function PlaybackBar({
           <button
             onClick={() => onQuickJump(5)}
             disabled={isLoading || duration === 0}
-            className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 dark:border-slate-700/80 active:scale-95 transition disabled:opacity-40 font-semibold text-xs sm:text-sm shadow-sm"
+            className="flex items-center gap-1 px-2.5 sm:px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 dark:border-slate-700/80 active:scale-95 transition disabled:opacity-40 font-semibold text-xs sm:text-sm shadow-sm"
             title="Fast forward 5 seconds"
           >
             <span>+5s</span>
             <RotateCw className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
           </button>
+
+          {/* Sheet Music Pop-up Toggle Button */}
+          {hasSheetMusic && (
+            <button
+              onClick={onToggleSheet}
+              className={`flex items-center gap-1.5 px-2.5 sm:px-3.5 py-2 rounded-xl border font-semibold text-xs sm:text-sm active:scale-95 transition shadow-sm ${
+                isSheetOpen
+                  ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-blue-600/25 ring-2 ring-blue-500/30'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-200 dark:border-slate-700/80'
+              }`}
+              title={isSheetOpen ? 'Hide Sheet Music' : 'View Sheet Music'}
+            >
+              <FileText className={`w-3.5 h-3.5 ${isSheetOpen ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
+              <span className="hidden sm:inline">Sheet Music</span>
+              <span className="sm:hidden">Sheet</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

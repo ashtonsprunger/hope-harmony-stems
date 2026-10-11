@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, FileText, Download } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import SectionSelector from './SectionSelector';
 import FocusSelector from './FocusSelector';
 import Mixer from './Mixer';
@@ -74,17 +74,6 @@ export default function SongPlayer({ song, onBackToSongs }) {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
-            {/* View Sheet Music Modal Button */}
-            {hasSheetMusic && (
-              <button
-                onClick={() => setIsSheetOpen(true)}
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs sm:text-sm transition shadow-sm active:scale-95"
-              >
-                <FileText className="w-4 h-4" />
-                <span>View Sheet Music</span>
-              </button>
-            )}
-
             {/* Direct PDF download link */}
             {sheetMusicList.map((item, idx) => (
               <a
@@ -165,12 +154,14 @@ export default function SongPlayer({ song, onBackToSongs }) {
         onTogglePlayPause={player.togglePlayPause}
         onSeek={player.seekTo}
         onQuickJump={player.quickJump}
-        // Sheet music dock page navigation
+        // Sheet music dock page navigation & toggle
         isSheetOpen={isSheetOpen}
         pageNumber={sheetPage}
         numPages={sheetNumPages}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
+        hasSheetMusic={hasSheetMusic}
+        onToggleSheet={() => setIsSheetOpen((prev) => !prev)}
       />
     </div>
   );
