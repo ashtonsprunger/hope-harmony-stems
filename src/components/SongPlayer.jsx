@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import SectionSelector from './SectionSelector';
 import FocusSelector from './FocusSelector';
 import Mixer from './Mixer';
@@ -46,16 +46,8 @@ export default function SongPlayer({ song, onBackToSongs }) {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 pb-48 sm:pb-52">
-      {/* Top Navigation & Song Details */}
+      {/* Song Details */}
       <div className="mb-6">
-        <button
-          onClick={onBackToSongs}
-          className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 transition mb-3 group"
-        >
-          <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-          <span>Back to Songs</span>
-        </button>
-
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-5 rounded-2xl bg-white dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 shadow-sm">
           <div>
             <div className="flex items-center gap-2 flex-wrap">

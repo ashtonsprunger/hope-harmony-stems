@@ -1,21 +1,41 @@
 import React from 'react';
-import { Sun, Moon } from 'lucide-react';
+import { Sun, Moon, X } from 'lucide-react';
 
 export default function Header({ currentSong, onBackToSongs, theme, onToggleTheme }) {
+  // When viewing a song: entire header is just the song title and an X button to go back
+  if (currentSong) {
+    return (
+      <header className="sticky top-0 z-30 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 py-3 sm:px-6 transition-colors duration-200">
+        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
+          <h1 className="font-['Oswald',sans-serif] uppercase font-bold text-lg sm:text-2xl tracking-wide text-slate-900 dark:text-white truncate">
+            {currentSong.title}
+          </h1>
+
+          <button
+            onClick={onBackToSongs}
+            className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white transition active:scale-95 border border-slate-200 dark:border-slate-700 shrink-0 shadow-sm"
+            title="Back to Songs"
+            aria-label="Back to Songs"
+          >
+            <X className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+        </div>
+      </header>
+    );
+  }
+
+  // Catalogue view header
   return (
     <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 py-3 sm:px-6 transition-colors duration-200">
       <div className="max-w-5xl mx-auto flex items-center justify-between">
-        <div 
-          onClick={onBackToSongs}
-          className="cursor-pointer group flex items-center gap-2.5"
-        >
+        <div className="flex items-center gap-2.5">
           <img 
             src="/logo.png" 
             alt="Hope Harmony" 
-            className="w-8 h-8 sm:w-9 sm:h-9 object-contain rounded-lg drop-shadow-sm group-hover:scale-105 transition-transform" 
+            className="w-8 h-8 sm:w-9 sm:h-9 object-contain rounded-lg drop-shadow-sm" 
           />
           <div className="flex items-center gap-2">
-            <span className="font-['Oswald',sans-serif] uppercase font-bold text-xl sm:text-2xl tracking-wide text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+            <span className="font-['Oswald',sans-serif] uppercase font-bold text-xl sm:text-2xl tracking-wide text-slate-900 dark:text-white">
               Hope Harmony
             </span>
             <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-500/30">
@@ -25,15 +45,6 @@ export default function Header({ currentSong, onBackToSongs, theme, onToggleThem
         </div>
 
         <div className="flex items-center gap-2">
-          {currentSong && (
-            <button
-              onClick={onBackToSongs}
-              className="text-xs sm:text-sm px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 font-medium transition border border-slate-200 dark:border-slate-700/60"
-            >
-              ← Songs List
-            </button>
-          )}
-
           {/* Light / Dark Mode Toggle Button */}
           <button
             onClick={onToggleTheme}
