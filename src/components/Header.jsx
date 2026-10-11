@@ -25,8 +25,8 @@ export default function Header({
   // When viewing a song: navbar has left arrow back button, song title, and composer info
   if (currentSong) {
     return (
-      <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 py-2.5 sm:px-6 transition-colors duration-200">
-        <div className="max-w-4xl mx-auto flex items-center gap-3 sm:gap-4">
+      <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 py-2.5 sm:px-6 transition-colors duration-200 min-h-[64px] sm:min-h-[71px] flex items-center">
+        <div className="w-full max-w-4xl mx-auto flex items-center gap-3 sm:gap-4">
           <button
             onClick={onBackToSongs}
             className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white transition active:scale-95 border border-slate-200 dark:border-slate-700 shadow-sm shrink-0"
@@ -60,13 +60,13 @@ export default function Header({
 
   // Catalogue view header
   return (
-    <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 py-3 sm:px-6 transition-colors duration-200">
-      <div className="max-w-5xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-2.5">
+    <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 py-2.5 sm:px-6 transition-colors duration-200 min-h-[64px] sm:min-h-[71px] flex items-center">
+      <div className="w-full max-w-5xl mx-auto flex items-center justify-between">
+        <div className="flex items-center gap-3">
           <img 
             src="/logo.png" 
             alt="Hope Harmony" 
-            className="w-8 h-8 sm:w-9 sm:h-9 object-contain rounded-lg drop-shadow-sm" 
+            className="w-9 h-9 sm:w-10 sm:h-10 object-contain rounded-xl drop-shadow-sm border border-slate-200/60 dark:border-slate-700/60 bg-white" 
           />
           <div className="flex items-center gap-2">
             <span className="font-['Oswald',sans-serif] uppercase font-bold text-xl sm:text-2xl tracking-wide text-slate-900 dark:text-white">
