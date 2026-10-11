@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Sun, Moon, X } from 'lucide-react';
+import { Sun, Moon, ArrowLeft } from 'lucide-react';
 
 export default function Header({ currentSong, onBackToSongs, theme, onToggleTheme }) {
   // Update document --header-height dynamically so modals and overlays can sit right under it
@@ -15,12 +15,21 @@ export default function Header({ currentSong, onBackToSongs, theme, onToggleThem
     return () => window.removeEventListener('resize', updateHeight);
   }, [currentSong]);
 
-  // When viewing a song: navbar has song title, composer info, and X button
+  // When viewing a song: navbar has left arrow back button, song title, and composer info
   if (currentSong) {
     return (
       <header className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 py-2.5 sm:px-6 transition-colors duration-200">
-        <div className="max-w-4xl mx-auto flex items-center justify-between gap-4">
-          <div className="min-w-0">
+        <div className="max-w-4xl mx-auto flex items-center gap-3 sm:gap-4">
+          <button
+            onClick={onBackToSongs}
+            className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white transition active:scale-95 border border-slate-200 dark:border-slate-700 shadow-sm shrink-0"
+            title="Back to Songs"
+            aria-label="Back to Songs"
+          >
+            <ArrowLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+
+          <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h1 className="font-['Oswald',sans-serif] uppercase font-bold text-lg sm:text-2xl tracking-wide text-slate-900 dark:text-white truncate">
                 {currentSong.title}
@@ -36,17 +45,6 @@ export default function Header({ currentSong, onBackToSongs, theme, onToggleThem
                 {currentSong.artist || currentSong.composer}
               </p>
             )}
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              onClick={onBackToSongs}
-              className="w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white transition active:scale-95 border border-slate-200 dark:border-slate-700 shadow-sm"
-              title="Back to Songs"
-              aria-label="Back to Songs"
-            >
-              <X className="w-5 h-5 sm:w-6 sm:h-6" />
-            </button>
           </div>
         </div>
       </header>
