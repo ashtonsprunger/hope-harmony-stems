@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import SongList from './components/SongList';
 import SongPlayer from './components/SongPlayer';
@@ -9,6 +9,7 @@ export default function App() {
   const [selectedSong, setSelectedSong] = useState(null);
   const [isLoadingSongs, setIsLoadingSongs] = useState(true);
   const [songsError, setSongsError] = useState(null);
+  const songsRef = useRef([]);
 
   // Theme state: 'light' by default, persisted in localStorage
   const [theme, setTheme] = useState(() => {
@@ -30,6 +31,39 @@ export default function App() {
     setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
   };
 
+  // Keep songsRef in sync
+  useEffect(() => {
+    songsRef.current = songs;
+  }, [songs]);
+
+  // Handle mobile / Android back button and browser history navigation
+  useEffect(() => {
+    const handleNavigation = () => {
+      const hash = window.location.hash.replace('#', '');
+      if (!hash) {
+        setSelectedSong(null);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      if (songsRef.current.length > 0) {
+        const matched = songsRef.current.find((s) => s.id === hash);
+        if (matched) {
+          setSelectedSong(matched);
+        } else {
+          setSelectedSong(null);
+        }
+      }
+    };
+
+    window.addEventListener('popstate', handleNavigation);
+    window.addEventListener('hashchange', handleNavigation);
+
+    return () => {
+      window.removeEventListener('popstate', handleNavigation);
+      window.removeEventListener('hashchange', handleNavigation);
+    };
+  }, []);
+
   // Fetch songs.json on mount
   useEffect(() => {
     async function loadSongs() {
@@ -41,12 +75,23 @@ export default function App() {
         }
         const data = await res.json();
         setSongs(data);
+        songsRef.current = data;
 
         // Check if there is a hash matching a song id in the URL
         const hash = window.location.hash.replace('#', '');
         if (hash) {
           const matched = data.find((s) => s.id === hash);
-          if (matched) setSelectedSong(matched);
+          if (matched) {
+            setSelectedSong(matched);
+            // Ensure direct entry via song URL on mobile has a root history entry behind it
+            // so hitting back on Android goes back to the song list rather than exiting
+            if (!window.history.state?.hasSongHistory) {
+              try {
+                window.history.replaceState({ hasSongHistory: true, view: 'list' }, '', window.location.pathname + window.location.search);
+                window.history.pushState({ hasSongHistory: true, view: 'song', songId: hash }, '', '#' + hash);
+              } catch (e) {}
+            }
+          }
         }
       } catch (err) {
         console.error('Error fetching songs.json:', err);
@@ -62,14 +107,27 @@ export default function App() {
   // Handle song selection
   const handleSelectSong = (song) => {
     setSelectedSong(song);
-    window.location.hash = song.id;
+    if (window.location.hash !== `#${song.id}`) {
+      window.location.hash = song.id;
+    }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   // Back to song list
   const handleBackToSongs = () => {
     setSelectedSong(null);
-    window.location.hash = '';
+    if (window.location.hash) {
+      try {
+        window.history.back();
+      } catch (e) {
+        try {
+          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        } catch (err) {
+          window.location.hash = '';
+        }
+      }
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
