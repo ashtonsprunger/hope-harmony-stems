@@ -155,6 +155,7 @@ export function useStemPlayer(section, songId) {
   const applyGainToNode = useCallback((trackId, gainNode, immediate = false) => {
     if (!gainNode || !audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
+    const now = ctx.currentTime;
     const isOtherHarmony = focusPartRef.current !== 'none' && trackId !== 'beat' && trackId !== focusPartRef.current;
     const isMuted = !!mutedStatesRef.current[trackId] || (isOtherHarmony && !!mutedStatesRef.current['harmonies']);
 
