@@ -197,7 +197,7 @@ export default function SheetMusicModal({
   const currentScale = ZOOM_LEVELS[zoomIndex];
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col bg-slate-100 dark:bg-slate-950 select-none pb-36 sm:pb-40 transition-colors duration-200">
+    <div className="fixed inset-0 z-30 flex flex-col bg-slate-100 dark:bg-slate-950 select-none pb-48 sm:pb-52 transition-colors duration-200">
       {/* Top Modal Header */}
       <div className="flex items-center justify-between gap-3 px-3 py-2 sm:px-5 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
         {/* Song Title */}

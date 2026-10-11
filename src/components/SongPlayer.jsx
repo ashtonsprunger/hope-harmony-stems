@@ -45,7 +45,7 @@ export default function SongPlayer({ song, onBackToSongs }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 pb-36">
+    <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 pb-48 sm:pb-52">
       {/* Top Navigation & Song Details */}
       <div className="mb-6">
         <button
