@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { RotateCcw, Loader2, AlertCircle, Download } from 'lucide-react';
+import { Loader2, AlertCircle, Download } from 'lucide-react';
 import * as pdfjsLib from 'pdfjs-dist';
 import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
 
@@ -130,11 +130,45 @@ export default function SheetMusicModal({
     }
   }, [isOpen, pageNumber, isLoading, renderPage]);
 
-  // Reset zoom on page turn
+  const [isDragging, setIsDragging] = useState(false);
+  const prevPageRef = useRef(pageNumber);
+
+  // Compute bounding pan limits and top-aligned position based on actual rendered canvas size
+  const getBounds = useCallback((scale) => {
+    if (!containerRef.current || !canvasRef.current || scale <= 1) {
+      return { maxPanX: 0, maxPanY: 0, topPanY: 0 };
+    }
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+    const canvasWidth = parseFloat(canvas.style.width) || canvas.clientWidth || 0;
+    const canvasHeight = parseFloat(canvas.style.height) || canvas.clientHeight || 0;
+    const containerWidth = container.clientWidth || 0;
+    const containerHeight = container.clientHeight || 0;
+
+    const scaledW = canvasWidth * scale;
+    const scaledH = canvasHeight * scale;
+
+    const padding = 12;
+    const maxPanX = Math.max(0, (scaledW - containerWidth) / 2 + padding);
+    const maxPanY = Math.max(0, (scaledH - containerHeight) / 2 + padding);
+    const topPanY = Math.max(0, (scaledH - containerHeight) / 2 + padding);
+
+    return { maxPanX, maxPanY, topPanY };
+  }, []);
+
+  // When page turns: keep zoom level, but reset pan to top of new page
   useEffect(() => {
-    setZoomIndex(0);
-    setPan({ x: 0, y: 0 });
-  }, [pageNumber]);
+    if (prevPageRef.current !== pageNumber) {
+      prevPageRef.current = pageNumber;
+      if (zoomIndex > 0) {
+        const currentScale = ZOOM_LEVELS[zoomIndex];
+        const { topPanY } = getBounds(currentScale);
+        setPan({ x: 0, y: topPanY });
+      } else {
+        setPan({ x: 0, y: 0 });
+      }
+    }
+  }, [pageNumber, zoomIndex, getBounds]);
 
   // Resize listener
   useEffect(() => {
@@ -147,19 +181,28 @@ export default function SheetMusicModal({
   }, [isOpen, isLoading, renderPage]);
 
   // Tap to cycle zoom: 1x -> 1.6x -> 2.4x -> 1x
+  // When zooming in, immediately snap to the top of the score
   const handleTap = () => {
     if (hasMovedRef.current) return;
 
     setZoomIndex((prev) => {
       const next = (prev + 1) % ZOOM_LEVELS.length;
-      if (next === 0) setPan({ x: 0, y: 0 });
+      if (next === 0) {
+        setPan({ x: 0, y: 0 });
+      } else {
+        const nextScale = ZOOM_LEVELS[next];
+        const { topPanY } = getBounds(nextScale);
+        setPan({ x: 0, y: topPanY });
+      }
       return next;
     });
   };
 
   // Drag to pan when zoomed
   const handlePointerDown = (clientX, clientY) => {
+    if (zoomIndex === 0) return;
     isDraggingRef.current = true;
+    setIsDragging(true);
     hasMovedRef.current = false;
     dragStartRef.current = { x: clientX, y: clientY };
     panStartRef.current = { ...pan };
@@ -177,8 +220,7 @@ export default function SheetMusicModal({
 
     if (zoomIndex > 0) {
       const currentScale = ZOOM_LEVELS[zoomIndex];
-      const maxPanX = (containerRef.current?.clientWidth || 360) * (currentScale - 1) * 0.55;
-      const maxPanY = (containerRef.current?.clientHeight || 600) * (currentScale - 1) * 0.55;
+      const { maxPanX, maxPanY } = getBounds(currentScale);
 
       const newX = Math.max(-maxPanX, Math.min(maxPanX, panStartRef.current.x + dx));
       const newY = Math.max(-maxPanY, Math.min(maxPanY, panStartRef.current.y + dy));
@@ -189,6 +231,7 @@ export default function SheetMusicModal({
 
   const handlePointerUp = () => {
     isDraggingRef.current = false;
+    setIsDragging(false);
   };
 
   if (!isOpen) return null;
@@ -200,40 +243,30 @@ export default function SheetMusicModal({
       style={{ top: 'var(--header-height, 65px)' }}
       className="fixed inset-x-0 bottom-0 z-30 flex flex-col bg-slate-100 dark:bg-slate-950 select-none pb-48 sm:pb-52 transition-colors duration-200"
     >
-      {/* Top Modal Sub-Bar (Sits directly under main app navbar) */}
-      <div className="flex items-center justify-between gap-3 px-3 py-2 sm:px-5 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
-        {/* Hint banner */}
-        <div className="text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 truncate">
-          <span className="font-medium text-slate-900 dark:text-slate-200">Tap sheet to zoom</span>
-        </div>
+      {/* Top Modal Sub-Bar (Sits directly under main app navbar) - Hidden when zoomed in for more screen real estate */}
+      {zoomIndex === 0 && (
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-6 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
+          {/* Hint banner */}
+          <div className="flex items-center gap-2 text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-200 truncate">
+            <span>Tap sheet to zoom</span>
+          </div>
 
-        {/* Zoom Level & Actions */}
-        <div className="flex items-center gap-1.5 justify-end">
-          {zoomIndex > 0 && (
-            <button
-              onClick={() => {
-                setZoomIndex(0);
-                setPan({ x: 0, y: 0 });
-              }}
-              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs transition"
-              title="Reset Zoom to 1x"
+          {/* Download Action */}
+          <div className="flex items-center gap-2 justify-end shrink-0">
+            <a
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              download
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 hover:text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white border border-slate-200 dark:border-slate-700 font-semibold text-xs sm:text-sm transition active:scale-95 shadow-sm"
+              title="Download PDF file"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
-            </button>
-          )}
-
-          <a
-            href={pdfUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            download
-            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs transition"
-            title="Download PDF file"
-          >
-            <Download className="w-3.5 h-3.5" />
-          </a>
+              <Download className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-blue-600 dark:text-blue-400" />
+              <span>Download PDF</span>
+            </a>
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Main Full-Width Non-Scrolling Canvas Container */}
       <div
@@ -263,7 +296,7 @@ export default function SheetMusicModal({
           </div>
         ) : (
           <div
-            className="transition-transform duration-150 ease-out origin-center"
+            className={`origin-center ${isDragging ? '' : 'transition-transform duration-150 ease-out'}`}
             style={{
               transform: `scale(${currentScale}) translate(${pan.x / currentScale}px, ${pan.y / currentScale}px)`,
             }}

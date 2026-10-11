@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Header from './components/Header';
 import SongList from './components/SongList';
 import SongPlayer from './components/SongPlayer';
@@ -15,6 +15,38 @@ export default function App() {
 
   // PWA installation state & handlers
   const { canInstall, showBanner, promptInstall, dismissPrompt } = usePwaInstall();
+
+  // Sheet Music state (persisted per song in localStorage)
+  const rawSheetMusic = selectedSong?.sheetMusic || selectedSong?.pdf;
+  const hasSheetMusic = Array.isArray(rawSheetMusic)
+    ? rawSheetMusic.length > 0
+    : Boolean(rawSheetMusic);
+
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+
+  useEffect(() => {
+    if (!selectedSong || !hasSheetMusic) {
+      setIsSheetOpen(false);
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(`hh_sheet_open_${selectedSong.id}`);
+      setIsSheetOpen(saved === 'true');
+    } catch (e) {
+      setIsSheetOpen(false);
+    }
+  }, [selectedSong?.id, hasSheetMusic]);
+
+  const handleToggleSheet = useCallback(() => {
+    if (!selectedSong) return;
+    setIsSheetOpen((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem(`hh_sheet_open_${selectedSong.id}`, String(next));
+      } catch (e) {}
+      return next;
+    });
+  }, [selectedSong]);
 
   // Theme state: 'light' by default, persisted in localStorage
   const [theme, setTheme] = useState(() => {
@@ -152,6 +184,9 @@ export default function App() {
         onBackToSongs={handleBackToSongs}
         theme={theme}
         onToggleTheme={toggleTheme}
+        hasSheetMusic={hasSheetMusic}
+        isSheetOpen={isSheetOpen}
+        onToggleSheet={handleToggleSheet}
       />
 
       <main className="flex-1">
@@ -173,6 +208,9 @@ export default function App() {
           <SongPlayer
             song={selectedSong}
             onBackToSongs={handleBackToSongs}
+            isSheetOpen={isSheetOpen}
+            onToggleSheet={handleToggleSheet}
+            onCloseSheet={() => setIsSheetOpen(false)}
           />
         ) : (
           <SongList

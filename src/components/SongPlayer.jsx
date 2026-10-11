@@ -6,7 +6,13 @@ import PlaybackBar from './PlaybackBar';
 import SheetMusicModal from './SheetMusicModal';
 import { useStemPlayer } from '../hooks/useStemPlayer';
 
-export default function SongPlayer({ song, onBackToSongs }) {
+export default function SongPlayer({
+  song,
+  onBackToSongs,
+  isSheetOpen,
+  onToggleSheet,
+  onCloseSheet,
+}) {
   // Speed / section initial state: check localStorage or 1st in list
   const [activeSectionId, setActiveSectionId] = useState(() => {
     try {
@@ -56,41 +62,6 @@ export default function SongPlayer({ song, onBackToSongs }) {
     : [];
 
   const hasSheetMusic = sheetMusicList.length > 0;
-
-  // Sheet Music Modal state (remembered per song in localStorage)
-  const [isSheetOpen, setIsSheetOpenState] = useState(() => {
-    if (!hasSheetMusic) return false;
-    try {
-      const saved = localStorage.getItem(`hh_sheet_open_${song.id}`);
-      return saved === 'true';
-    } catch (e) {
-      return false;
-    }
-  });
-
-  const setIsSheetOpen = useCallback((actionOrValue) => {
-    setIsSheetOpenState((prev) => {
-      const next = typeof actionOrValue === 'function' ? actionOrValue(prev) : actionOrValue;
-      try {
-        localStorage.setItem(`hh_sheet_open_${song.id}`, String(next));
-      } catch (e) {}
-      return next;
-    });
-  }, [song.id]);
-
-  // Keep isSheetOpen in sync if song changes
-  useEffect(() => {
-    if (!hasSheetMusic) {
-      setIsSheetOpenState(false);
-      return;
-    }
-    try {
-      const saved = localStorage.getItem(`hh_sheet_open_${song.id}`);
-      setIsSheetOpenState(saved === 'true');
-    } catch (e) {
-      setIsSheetOpenState(false);
-    }
-  }, [song.id, hasSheetMusic]);
 
   const [sheetPage, setSheetPage] = useState(1);
   const [sheetNumPages, setSheetNumPages] = useState(1);
@@ -145,7 +116,7 @@ export default function SongPlayer({ song, onBackToSongs }) {
       {hasSheetMusic && (
         <SheetMusicModal
           isOpen={isSheetOpen}
-          onClose={() => setIsSheetOpen(false)}
+          onClose={onCloseSheet}
           pdfUrl={sheetMusicList[0].file}
           songTitle={song.title}
           pageNumber={sheetPage}
@@ -163,14 +134,12 @@ export default function SongPlayer({ song, onBackToSongs }) {
         onTogglePlayPause={player.togglePlayPause}
         onSeek={player.seekTo}
         onQuickJump={player.quickJump}
-        // Sheet music dock page navigation & toggle
+        // Sheet music dock page navigation
         isSheetOpen={isSheetOpen}
         pageNumber={sheetPage}
         numPages={sheetNumPages}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
-        hasSheetMusic={hasSheetMusic}
-        onToggleSheet={() => setIsSheetOpen((prev) => !prev)}
       />
     </div>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, RotateCcw, RotateCw, Square, Loader2, AlertCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { Play, Pause, RotateCcw, RotateCw, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function formatTime(secs) {
   if (isNaN(secs) || secs < 0) return '0:00';
@@ -23,9 +23,6 @@ export default function PlaybackBar({
   numPages = 1,
   onPrevPage,
   onNextPage,
-  // Sheet Music toggle
-  hasSheetMusic = false,
-  onToggleSheet,
 }) {
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -96,18 +93,8 @@ export default function PlaybackBar({
           </span>
         </div>
 
-        {/* Transport Controls - Large Touch Targets */}
-        <div className="flex items-center justify-center gap-2.5 sm:gap-4 flex-wrap">
-          {/* Reset to Start */}
-          <button
-            onClick={() => onSeek(0)}
-            disabled={isLoading || duration === 0}
-            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-400 dark:hover:text-white border border-slate-200 dark:border-slate-700/80 active:scale-95 transition disabled:opacity-40 shadow-sm"
-            title="Reset to Beginning"
-          >
-            <Square className="w-4 h-4 sm:w-5 sm:h-5" />
-          </button>
-
+        {/* Transport Controls - Centered */}
+        <div className="flex items-center justify-center gap-3 sm:gap-5">
           {/* Quick Jump -5s */}
           <button
             onClick={() => onQuickJump(-5)}
@@ -119,7 +106,7 @@ export default function PlaybackBar({
             <span>-5s</span>
           </button>
 
-          {/* Master Play / Pause Button */}
+          {/* Master Play / Pause Button - Dead Centered */}
           <button
             onClick={onTogglePlayPause}
             disabled={isLoading || duration === 0}
@@ -149,23 +136,6 @@ export default function PlaybackBar({
             <span>+5s</span>
             <RotateCw className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
           </button>
-
-          {/* Sheet Music Pop-up Toggle Button */}
-          {hasSheetMusic && (
-            <button
-              onClick={onToggleSheet}
-              className={`flex items-center gap-1.5 px-3.5 sm:px-4 py-3 sm:py-3.5 rounded-2xl border font-bold text-xs sm:text-sm active:scale-95 transition shadow-sm ${
-                isSheetOpen
-                  ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-blue-600/25 ring-2 ring-blue-500/30'
-                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-100 dark:border-slate-700/80'
-              }`}
-              title={isSheetOpen ? 'Hide Sheet Music' : 'View Sheet Music'}
-            >
-              <FileText className={`w-4 h-4 sm:w-5 sm:h-5 ${isSheetOpen ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
-              <span className="hidden sm:inline">Sheet Music</span>
-              <span className="sm:hidden">Sheet</span>
-            </button>
-          )}
         </div>
       </div>
     </div>
