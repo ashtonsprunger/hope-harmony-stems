@@ -47,22 +47,24 @@ export default function SongPlayer({ song, onBackToSongs }) {
     <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 pb-48 sm:pb-52">
       {/* Main Workspace Controls (Always accessible when modal closed) */}
       <div className="space-y-6">
-        {/* 1. Section / Tempo Selector */}
-        <SectionSelector
-          sections={song.sections}
-          activeSectionId={activeSection?.id}
-          onSelectSection={handleSelectSection}
-          label={song.tempoLabel || song.sectionLabel || song.versionLabel || 'Speed:'}
-        />
-
-        {/* 2. Focus Part Selector */}
-        {activeSection?.stems && (
-          <FocusSelector
-            stems={activeSection.stems}
-            focusPart={player.focusPart}
-            onSelectFocus={player.setFocusPart}
+        {/* Selectors Row: Speed and Part */}
+        <div className="flex flex-wrap items-center gap-4 sm:gap-8">
+          <SectionSelector
+            sections={song.sections}
+            activeSectionId={activeSection?.id}
+            onSelectSection={handleSelectSection}
+            label={song.tempoLabel || song.sectionLabel || song.versionLabel || 'Speed:'}
           />
-        )}
+
+          {activeSection?.stems && (
+            <FocusSelector
+              stems={activeSection.stems}
+              focusPart={player.focusPart}
+              onSelectFocus={player.setFocusPart}
+              label={song.partLabel || 'Part:'}
+            />
+          )}
+        </div>
 
         {/* 3. Stem Mixer */}
         <Mixer
