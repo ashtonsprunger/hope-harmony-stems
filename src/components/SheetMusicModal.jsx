@@ -197,14 +197,14 @@ export default function SheetMusicModal({
   const currentScale = ZOOM_LEVELS[zoomIndex];
 
   return (
-    <div className="fixed inset-0 z-30 flex flex-col bg-slate-100 dark:bg-slate-950 select-none pb-48 sm:pb-52 transition-colors duration-200">
-      {/* Top Modal Header */}
+    <div
+      style={{ top: 'var(--header-height, 65px)' }}
+      className="fixed inset-x-0 bottom-0 z-30 flex flex-col bg-slate-100 dark:bg-slate-950 select-none pb-48 sm:pb-52 transition-colors duration-200"
+    >
+      {/* Top Modal Sub-Bar (Sits directly under main app navbar) */}
       <div className="flex items-center justify-between gap-3 px-3 py-2 sm:px-5 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
-        {/* Song Title */}
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="font-semibold text-xs sm:text-sm text-slate-800 dark:text-slate-200 truncate">
-            {songTitle || 'Sheet Music'}
-          </span>
+        <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 min-w-0 truncate">
+          Sheet Music Score
         </div>
 
         {/* Hint banner (no bulb icon) */}

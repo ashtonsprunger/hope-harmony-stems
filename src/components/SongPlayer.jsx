@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import SectionSelector from './SectionSelector';
 import FocusSelector from './FocusSelector';
 import Mixer from './Mixer';
@@ -21,16 +21,6 @@ export default function SongPlayer({ song, onBackToSongs }) {
     return song.sections?.[0]?.id || '';
   });
 
-  // Sheet Music Modal state
-  const [isSheetOpen, setIsSheetOpen] = useState(false);
-  const [sheetPage, setSheetPage] = useState(1);
-  const [sheetNumPages, setSheetNumPages] = useState(1);
-
-  const activeSection =
-    song.sections?.find((s) => s.id === activeSectionId) || song.sections?.[0];
-
-  const player = useStemPlayer(activeSection, song.id);
-
   const handleSelectSection = (newSection) => {
     setActiveSectionId(newSection.id);
     try {
@@ -52,6 +42,11 @@ export default function SongPlayer({ song, onBackToSongs }) {
     setActiveSectionId(song.sections?.[0]?.id || '');
   }, [song.id]);
 
+  const activeSection =
+    song.sections?.find((s) => s.id === activeSectionId) || song.sections?.[0];
+
+  const player = useStemPlayer(activeSection, song.id);
+
   // Support string or array format for sheetMusic / pdf
   const rawSheetMusic = song.sheetMusic || song.pdf;
   const sheetMusicList = Array.isArray(rawSheetMusic)
@@ -61,6 +56,44 @@ export default function SongPlayer({ song, onBackToSongs }) {
     : [];
 
   const hasSheetMusic = sheetMusicList.length > 0;
+
+  // Sheet Music Modal state (remembered per song in localStorage)
+  const [isSheetOpen, setIsSheetOpenState] = useState(() => {
+    if (!hasSheetMusic) return false;
+    try {
+      const saved = localStorage.getItem(`hh_sheet_open_${song.id}`);
+      return saved === 'true';
+    } catch (e) {
+      return false;
+    }
+  });
+
+  const setIsSheetOpen = useCallback((actionOrValue) => {
+    setIsSheetOpenState((prev) => {
+      const next = typeof actionOrValue === 'function' ? actionOrValue(prev) : actionOrValue;
+      try {
+        localStorage.setItem(`hh_sheet_open_${song.id}`, String(next));
+      } catch (e) {}
+      return next;
+    });
+  }, [song.id]);
+
+  // Keep isSheetOpen in sync if song changes
+  useEffect(() => {
+    if (!hasSheetMusic) {
+      setIsSheetOpenState(false);
+      return;
+    }
+    try {
+      const saved = localStorage.getItem(`hh_sheet_open_${song.id}`);
+      setIsSheetOpenState(saved === 'true');
+    } catch (e) {
+      setIsSheetOpenState(false);
+    }
+  }, [song.id, hasSheetMusic]);
+
+  const [sheetPage, setSheetPage] = useState(1);
+  const [sheetNumPages, setSheetNumPages] = useState(1);
 
   const handlePrevPage = () => {
     setSheetPage((p) => Math.max(1, p - 1));
