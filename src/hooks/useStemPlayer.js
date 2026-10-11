@@ -3,7 +3,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 function loadSavedMix(songId) {
   if (!songId) return null;
   try {
-    const raw = localStorage.getItem(`hh_mix_${songId}`);
+    const raw = localStorage.getItem(`hh_mix_v2_${songId}`);
     return raw ? JSON.parse(raw) : null;
   } catch (e) {
     return null;
@@ -15,7 +15,7 @@ function saveMixToStorage(songId, data) {
   try {
     const existing = loadSavedMix(songId) || {};
     const updated = { ...existing, ...data };
-    localStorage.setItem(`hh_mix_${songId}`, JSON.stringify(updated));
+    localStorage.setItem(`hh_mix_v2_${songId}`, JSON.stringify(updated));
   } catch (e) {}
 }
 
@@ -164,7 +164,7 @@ export function useStemPlayer(section, songId) {
         // Capped so 100% on slider = 25% audio gain for fine control
         targetGain = (beatVolumeRef.current / 100) * 0.25;
       } else if (focusPartRef.current === 'none') {
-        const vol = stemVolumesRef.current[trackId] ?? 80;
+        const vol = stemVolumesRef.current[trackId] ?? 100;
         targetGain = vol / 100;
       } else if (focusPartRef.current === trackId) {
         const vol = stemVolumesRef.current[trackId] ?? 100;
@@ -191,7 +191,7 @@ export function useStemPlayer(section, songId) {
       let changed = false;
       section.stems?.forEach((stem) => {
         if (updated[stem.id] === undefined) {
-          updated[stem.id] = 80;
+          updated[stem.id] = 100;
           changed = true;
         }
       });

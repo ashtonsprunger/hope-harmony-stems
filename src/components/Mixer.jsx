@@ -199,7 +199,7 @@ export default function Mixer({
         <div className="space-y-3">
           {/* Individual Harmony Stem Cards */}
           {stems.map((stem, idx) => {
-            const vol = stemVolumes[stem.id] ?? 80;
+            const vol = stemVolumes[stem.id] ?? 100;
             const isMuted = !!mutedStates[stem.id];
             const colorClass = getPartColor(idx, stem.name);
 
