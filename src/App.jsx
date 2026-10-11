@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import Header from './components/Header';
 import SongList from './components/SongList';
 import SongPlayer from './components/SongPlayer';
+import InstallBanner from './components/InstallBanner';
+import { usePwaInstall } from './hooks/usePwaInstall';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 export default function App() {
@@ -10,6 +12,9 @@ export default function App() {
   const [isLoadingSongs, setIsLoadingSongs] = useState(true);
   const [songsError, setSongsError] = useState(null);
   const songsRef = useRef([]);
+
+  // PWA installation state & handlers
+  const { canInstall, showBanner, promptInstall, dismissPrompt } = usePwaInstall();
 
   // Theme state: 'light' by default, persisted in localStorage
   const [theme, setTheme] = useState(() => {
@@ -147,6 +152,8 @@ export default function App() {
         onBackToSongs={handleBackToSongs}
         theme={theme}
         onToggleTheme={toggleTheme}
+        canInstall={canInstall}
+        onInstall={promptInstall}
       />
 
       <main className="flex-1">
@@ -176,6 +183,14 @@ export default function App() {
           />
         )}
       </main>
+
+      {/* PWA Install Banner (Mobile & Desktop) on Song Catalogue */}
+      {showBanner && !selectedSong && (
+        <InstallBanner
+          onInstall={promptInstall}
+          onDismiss={dismissPrompt}
+        />
+      )}
     </div>
   );
 }

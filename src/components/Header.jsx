@@ -1,7 +1,14 @@
 import React, { useEffect } from 'react';
-import { Sun, Moon, ArrowLeft } from 'lucide-react';
+import { Sun, Moon, ArrowLeft, Download } from 'lucide-react';
 
-export default function Header({ currentSong, onBackToSongs, theme, onToggleTheme }) {
+export default function Header({
+  currentSong,
+  onBackToSongs,
+  theme,
+  onToggleTheme,
+  canInstall,
+  onInstall,
+}) {
   // Update document --header-height dynamically so modals and overlays can sit right under it
   useEffect(() => {
     const updateHeight = () => {
@@ -72,6 +79,18 @@ export default function Header({ currentSong, onBackToSongs, theme, onToggleThem
         </div>
 
         <div className="flex items-center gap-2">
+          {canInstall && (
+            <button
+              onClick={onInstall}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 sm:px-3 rounded-xl bg-blue-600 hover:bg-blue-700 active:scale-95 text-white font-semibold text-xs sm:text-sm shadow-sm transition"
+              title="Install Hope Harmony App"
+            >
+              <Download className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Install App</span>
+              <span className="sm:hidden">Install</span>
+            </button>
+          )}
+
           {/* Light / Dark Mode Toggle Button */}
           <button
             onClick={onToggleTheme}
