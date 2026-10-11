@@ -167,7 +167,8 @@ export function useStemPlayer(section, songId) {
         const vol = stemVolumesRef.current[trackId] ?? 80;
         targetGain = vol / 100;
       } else if (focusPartRef.current === trackId) {
-        targetGain = 1.0;
+        const vol = stemVolumesRef.current[trackId] ?? 100;
+        targetGain = vol / 100;
       } else {
         targetGain = linkedHarmonyVolumeRef.current / 100;
       }
