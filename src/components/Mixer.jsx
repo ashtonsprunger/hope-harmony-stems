@@ -113,7 +113,7 @@ export default function Mixer({
             <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm">
               <div className="flex items-center justify-between gap-3 mb-2.5">
                 <h3 className="font-bold text-lg sm:text-xl text-slate-900 dark:text-slate-100">
-                  Beat / Rhythm Track
+                  Beat
                 </h3>
 
                 <button
@@ -212,7 +212,7 @@ export default function Mixer({
             <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800/90 shadow-sm">
               <div className="flex items-center justify-between gap-3 mb-2.5">
                 <h3 className="font-bold text-lg sm:text-xl text-slate-900 dark:text-slate-100">
-                  Beat / Rhythm Track
+                  Beat
                 </h3>
 
                 <button
