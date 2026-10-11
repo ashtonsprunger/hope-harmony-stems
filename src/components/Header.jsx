@@ -59,44 +59,35 @@ export default function Header({
   // Catalogue view header
   return (
     <header className="sticky top-0 z-30 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800/80 px-4 py-2.5 sm:px-6 transition-colors duration-200 min-h-[64px] sm:min-h-[71px] flex items-center">
-      <div className="w-full max-w-5xl mx-auto flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="w-full max-w-4xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
           <img 
             src="/logo.png" 
             alt="Hope Harmony" 
-            className="w-9 h-9 sm:w-10 sm:h-10 object-contain rounded-xl drop-shadow-sm border border-slate-200/60 dark:border-slate-700/60 bg-white" 
+            className="w-10 h-10 sm:w-11 sm:h-11 object-contain shrink-0" 
           />
-          <div className="flex items-center gap-2">
-            <span className="font-['Oswald',sans-serif] uppercase font-bold text-xl sm:text-2xl tracking-wide text-slate-900 dark:text-white">
+          <div className="flex items-center gap-2 truncate">
+            <span className="font-['Oswald',sans-serif] uppercase font-bold text-lg sm:text-2xl tracking-wide text-slate-900 dark:text-white truncate">
               Hope Harmony
             </span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-500/30">
-              Stem Player
+            <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-500/30 shrink-0">
+              Practice
             </span>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Light / Dark Mode Toggle Button */}
-          <button
-            onClick={onToggleTheme}
-            className="flex items-center gap-1.5 p-2 sm:px-3 sm:py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition font-medium text-xs sm:text-sm"
-            title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
-            aria-label="Toggle theme"
-          >
-            {theme === 'light' ? (
-              <>
-                <Moon className="w-4 h-4 text-slate-700 dark:text-slate-300" />
-                <span className="hidden sm:inline">Dark</span>
-              </>
-            ) : (
-              <>
-                <Sun className="w-4 h-4 text-amber-400" />
-                <span className="hidden sm:inline">Light</span>
-              </>
-            )}
-          </button>
-        </div>
+        <button
+          onClick={onToggleTheme}
+          className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl flex items-center justify-center bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white transition active:scale-95 border border-slate-200 dark:border-slate-700 shadow-sm shrink-0"
+          title={`Switch to ${theme === 'light' ? 'Dark' : 'Light'} Mode`}
+          aria-label="Toggle theme"
+        >
+          {theme === 'light' ? (
+            <Moon className="w-5 h-5 sm:w-6 sm:h-6 text-slate-700 dark:text-slate-300" />
+          ) : (
+            <Sun className="w-5 h-5 sm:w-6 sm:h-6 text-amber-400" />
+          )}
+        </button>
       </div>
     </header>
   );
