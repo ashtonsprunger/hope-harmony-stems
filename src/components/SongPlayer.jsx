@@ -47,11 +47,12 @@ export default function SongPlayer({ song, onBackToSongs }) {
     <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 pb-48 sm:pb-52">
       {/* Main Workspace Controls (Always accessible when modal closed) */}
       <div className="space-y-6">
-        {/* 1. Section / Tempo Tabs */}
+        {/* 1. Section / Tempo Selector */}
         <SectionSelector
           sections={song.sections}
           activeSectionId={activeSection?.id}
           onSelectSection={handleSelectSection}
+          label={song.tempoLabel || song.sectionLabel || song.versionLabel || 'Speed:'}
         />
 
         {/* 2. Focus Part Selector */}
