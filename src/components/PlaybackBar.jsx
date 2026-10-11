@@ -1,5 +1,5 @@
 import React from 'react';
-import { Play, Pause, RotateCcw, RotateCw, Square, Loader2, AlertCircle } from 'lucide-react';
+import { Play, Pause, RotateCcw, RotateCw, Square, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function formatTime(secs) {
   if (isNaN(secs) || secs < 0) return '0:00';
@@ -17,11 +17,17 @@ export default function PlaybackBar({
   onTogglePlayPause,
   onSeek,
   onQuickJump,
+  // Page buttons built into dock for sheet music mode
+  isSheetOpen = false,
+  pageNumber = 1,
+  numPages = 1,
+  onPrevPage,
+  onNextPage,
 }) {
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800/90 shadow-[0_-10px_35px_rgba(0,0,0,0.12)] dark:shadow-[0_-12px_40px_rgba(0,0,0,0.6)] px-4 py-3 sm:py-4 transition-colors duration-200">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800/90 shadow-[0_-10px_35px_rgba(0,0,0,0.12)] dark:shadow-[0_-12px_40px_rgba(0,0,0,0.6)] px-4 py-2.5 sm:py-3.5 transition-colors duration-200">
       <div className="max-w-4xl mx-auto">
         {/* Loading error warning */}
         {loadingError && (
@@ -31,8 +37,37 @@ export default function PlaybackBar({
           </div>
         )}
 
+        {/* 📄 Page Buttons Built into Player Control Dock */}
+        {isSheetOpen && numPages > 1 && (
+          <div className="flex items-center justify-center gap-3 mb-2 pb-2 border-b border-slate-200/80 dark:border-slate-800/80">
+            <button
+              onClick={onPrevPage}
+              disabled={pageNumber <= 1}
+              className="flex items-center gap-1 px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:pointer-events-none text-xs font-semibold transition active:scale-95 border border-slate-200 dark:border-slate-700 shadow-sm"
+              title="Previous Page"
+            >
+              <ChevronLeft className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>Prev Page</span>
+            </button>
+
+            <span className="text-xs font-mono font-bold px-3 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 shadow-inner">
+              Page {pageNumber} of {numPages}
+            </span>
+
+            <button
+              onClick={onNextPage}
+              disabled={pageNumber >= numPages}
+              className="flex items-center gap-1 px-3 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 disabled:opacity-30 disabled:pointer-events-none text-xs font-semibold transition active:scale-95 border border-slate-200 dark:border-slate-700 shadow-sm"
+              title="Next Page"
+            >
+              <span>Next Page</span>
+              <ChevronRight className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            </button>
+          </div>
+        )}
+
         {/* Timeline Scrubber */}
-        <div className="flex items-center gap-3 mb-2 sm:mb-3">
+        <div className="flex items-center gap-3 mb-2 sm:mb-2.5">
           <span className="text-xs font-mono font-semibold text-slate-500 dark:text-slate-400 w-10 text-right">
             {formatTime(currentTime)}
           </span>
@@ -81,11 +116,11 @@ export default function PlaybackBar({
             <span>-5s</span>
           </button>
 
-          {/* Master Play / Pause Button - Solid Blue with Drop Shadow */}
+          {/* Master Play / Pause Button */}
           <button
             onClick={onTogglePlayPause}
             disabled={isLoading || duration === 0}
-            className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-150 shadow-xl ${
+            className={`w-13 h-13 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all duration-150 shadow-xl ${
               isLoading || duration === 0
                 ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
                 : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/35 dark:shadow-blue-600/50 active:scale-95 border border-blue-400/40 ring-4 ring-blue-500/15'

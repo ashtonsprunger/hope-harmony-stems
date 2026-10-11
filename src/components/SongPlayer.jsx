@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
-import { ArrowLeft, FileText, Download, Sliders, Eye } from 'lucide-react';
+import { ArrowLeft, FileText, Download } from 'lucide-react';
 import SectionSelector from './SectionSelector';
 import FocusSelector from './FocusSelector';
 import Mixer from './Mixer';
 import PlaybackBar from './PlaybackBar';
-import SheetMusicViewer from './SheetMusicViewer';
+import SheetMusicModal from './SheetMusicModal';
 import { useStemPlayer } from '../hooks/useStemPlayer';
 
 export default function SongPlayer({ song, onBackToSongs }) {
   const [activeSectionId, setActiveSectionId] = useState(
     song.sections?.[0]?.id || ''
   );
-  const [activeTab, setActiveTab] = useState('mixer'); // 'mixer' | 'sheet'
+
+  // Sheet Music Modal state
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [sheetPage, setSheetPage] = useState(1);
+  const [sheetNumPages, setSheetNumPages] = useState(1);
 
   const activeSection =
     song.sections?.find((s) => s.id === activeSectionId) || song.sections?.[0];
@@ -31,6 +35,14 @@ export default function SongPlayer({ song, onBackToSongs }) {
     : [];
 
   const hasSheetMusic = sheetMusicList.length > 0;
+
+  const handlePrevPage = () => {
+    setSheetPage((p) => Math.max(1, p - 1));
+  };
+
+  const handleNextPage = () => {
+    setSheetPage((p) => Math.min(sheetNumPages, p + 1));
+  };
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 pb-36">
@@ -62,6 +74,17 @@ export default function SongPlayer({ song, onBackToSongs }) {
           </div>
 
           <div className="flex items-center gap-2.5 flex-wrap">
+            {/* View Sheet Music Modal Button */}
+            {hasSheetMusic && (
+              <button
+                onClick={() => setIsSheetOpen(true)}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs sm:text-sm transition shadow-sm active:scale-95"
+              >
+                <FileText className="w-4 h-4" />
+                <span>View Sheet Music</span>
+              </button>
+            )}
+
             {/* Direct PDF download link */}
             {sheetMusicList.map((item, idx) => (
               <a
@@ -70,11 +93,11 @@ export default function SongPlayer({ song, onBackToSongs }) {
                 target="_blank"
                 rel="noopener noreferrer"
                 download
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-medium text-xs transition"
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 font-medium text-xs sm:text-sm transition"
                 title="Download PDF file"
               >
                 <Download className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Download PDF</span>
+                <span className="hidden sm:inline">Download</span>
               </a>
             ))}
 
@@ -87,91 +110,52 @@ export default function SongPlayer({ song, onBackToSongs }) {
         </div>
       </div>
 
-      {/* View Switcher Tabs (when Sheet Music is available) */}
-      {hasSheetMusic && (
-        <div className="flex items-center gap-1.5 mb-6 p-1 rounded-xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 w-fit shadow-sm">
-          <button
-            onClick={() => setActiveTab('mixer')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition ${
-              activeTab === 'mixer'
-                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <Sliders className="w-4 h-4" />
-            <span>Stem Mixer</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('sheet')}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold transition ${
-              activeTab === 'sheet'
-                ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm'
-                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-            }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>Sheet Music</span>
-          </button>
-        </div>
-      )}
-
-      {/* Main Workspace Controls */}
+      {/* Main Workspace Controls (Always accessible when modal closed) */}
       <div className="space-y-6">
-        {/* VIEW 1: STEM MIXER */}
-        {activeTab === 'mixer' && (
-          <>
-            {/* 1. Section / Tempo Tabs */}
-            <SectionSelector
-              sections={song.sections}
-              activeSectionId={activeSection?.id}
-              onSelectSection={handleSelectSection}
-            />
+        {/* 1. Section / Tempo Tabs */}
+        <SectionSelector
+          sections={song.sections}
+          activeSectionId={activeSection?.id}
+          onSelectSection={handleSelectSection}
+        />
 
-            {/* 2. Focus Part Selector */}
-            {activeSection?.stems && (
-              <FocusSelector
-                stems={activeSection.stems}
-                focusPart={player.focusPart}
-                onSelectFocus={player.setFocusPart}
-              />
-            )}
-
-            {/* 3. Stem Mixer */}
-            <Mixer
-              section={activeSection}
-              focusPart={player.focusPart}
-              stemVolumes={player.stemVolumes}
-              onSingleStemVolumeChange={player.setSingleStemVolume}
-              linkedHarmonyVolume={player.linkedHarmonyVolume}
-              onLinkedHarmonyVolumeChange={player.setLinkedHarmonyVolume}
-              beatVolume={player.beatVolume}
-              onBeatVolumeChange={player.setBeatVolume}
-              mutedStates={player.mutedStates}
-              onToggleMute={player.toggleMute}
-            />
-          </>
+        {/* 2. Focus Part Selector */}
+        {activeSection?.stems && (
+          <FocusSelector
+            stems={activeSection.stems}
+            focusPart={player.focusPart}
+            onSelectFocus={player.setFocusPart}
+          />
         )}
 
-        {/* VIEW 2: EMBEDDED SHEET MUSIC VIEWER */}
-        {activeTab === 'sheet' && hasSheetMusic && (
-          <div className="space-y-4">
-            {/* Section / Tempo Tabs remain accessible while reading! */}
-            <SectionSelector
-              sections={song.sections}
-              activeSectionId={activeSection?.id}
-              onSelectSection={handleSelectSection}
-            />
-
-            <SheetMusicViewer
-              pdfUrl={sheetMusicList[0].file}
-              songTitle={song.title}
-            />
-          </div>
-        )}
+        {/* 3. Stem Mixer */}
+        <Mixer
+          section={activeSection}
+          focusPart={player.focusPart}
+          stemVolumes={player.stemVolumes}
+          onSingleStemVolumeChange={player.setSingleStemVolume}
+          linkedHarmonyVolume={player.linkedHarmonyVolume}
+          onLinkedHarmonyVolumeChange={player.setLinkedHarmonyVolume}
+          beatVolume={player.beatVolume}
+          onBeatVolumeChange={player.setBeatVolume}
+          mutedStates={player.mutedStates}
+          onToggleMute={player.toggleMute}
+        />
       </div>
 
-      {/* 4. Sticky Bottom Playback Bar (Always Visible!) */}
+      {/* 📄 Full-Width Non-Scrolling Sheet Music Modal */}
+      {hasSheetMusic && (
+        <SheetMusicModal
+          isOpen={isSheetOpen}
+          onClose={() => setIsSheetOpen(false)}
+          pdfUrl={sheetMusicList[0].file}
+          songTitle={song.title}
+          pageNumber={sheetPage}
+          onNumPagesChange={setSheetNumPages}
+        />
+      )}
+
+      {/* 4. Sticky Bottom Playback Bar (Always Visible + Built-in Page Turn Dock) */}
       <PlaybackBar
         isPlaying={player.isPlaying}
         currentTime={player.currentTime}
@@ -181,6 +165,12 @@ export default function SongPlayer({ song, onBackToSongs }) {
         onTogglePlayPause={player.togglePlayPause}
         onSeek={player.seekTo}
         onQuickJump={player.quickJump}
+        // Sheet music dock page navigation
+        isSheetOpen={isSheetOpen}
+        pageNumber={sheetPage}
+        numPages={sheetNumPages}
+        onPrevPage={handlePrevPage}
+        onNextPage={handleNextPage}
       />
     </div>
   );
