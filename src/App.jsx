@@ -64,6 +64,22 @@ export default function App() {
     };
   }, []);
 
+  // Ensure history stack has the song catalogue root behind any directly loaded or reloaded song URL
+  useEffect(() => {
+    const rawHash = window.location.hash;
+    const songId = rawHash.replace('#', '');
+    if (songId) {
+      try {
+        // Transform the reloaded / entry history state into the catalogue root,
+        // and push the current song on top so the mobile back button always pops to the song list
+        window.history.replaceState({ appPage: 'list' }, '', window.location.pathname + window.location.search);
+        window.history.pushState({ appPage: 'song', songId }, '', rawHash);
+      } catch (e) {
+        console.warn('History navigation setup failed', e);
+      }
+    }
+  }, []);
+
   // Fetch songs.json on mount
   useEffect(() => {
     async function loadSongs() {
@@ -83,14 +99,6 @@ export default function App() {
           const matched = data.find((s) => s.id === hash);
           if (matched) {
             setSelectedSong(matched);
-            // Ensure direct entry via song URL on mobile has a root history entry behind it
-            // so hitting back on Android goes back to the song list rather than exiting
-            if (!window.history.state?.hasSongHistory) {
-              try {
-                window.history.replaceState({ hasSongHistory: true, view: 'list' }, '', window.location.pathname + window.location.search);
-                window.history.pushState({ hasSongHistory: true, view: 'song', songId: hash }, '', '#' + hash);
-              } catch (e) {}
-            }
           }
         }
       } catch (err) {
@@ -107,7 +115,9 @@ export default function App() {
   // Handle song selection
   const handleSelectSong = (song) => {
     setSelectedSong(song);
-    if (window.location.hash !== `#${song.id}`) {
+    try {
+      window.history.pushState({ appPage: 'song', songId: song.id }, '', '#' + song.id);
+    } catch (e) {
       window.location.hash = song.id;
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -121,7 +131,7 @@ export default function App() {
         window.history.back();
       } catch (e) {
         try {
-          window.history.replaceState(null, '', window.location.pathname + window.location.search);
+          window.history.replaceState({ appPage: 'list' }, '', window.location.pathname + window.location.search);
         } catch (err) {
           window.location.hash = '';
         }
