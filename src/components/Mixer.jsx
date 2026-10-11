@@ -50,7 +50,7 @@ export default function Mixer({
                 <Layers className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                 <div>
                   <h3 className="font-bold text-sm sm:text-base text-slate-900 dark:text-slate-100 flex items-center gap-2">
-                    Other Harmonies (Linked)
+                    Other Harmonies
                     <span className="text-xs font-normal text-slate-500 dark:text-slate-400">
                       ({otherStems.map((s) => s.name).join(', ')})
                     </span>
@@ -72,47 +72,6 @@ export default function Mixer({
               <span className="font-bold font-mono text-sm sm:text-base text-black dark:text-white w-8 text-right shrink-0">
                 {linkedHarmonyVolume}
               </span>
-            </div>
-
-            {/* Individual Mute Buttons */}
-            <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800/80">
-              <div className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
-                Individual Mute Controls
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {stems.map((stem) => {
-                  const isMuted = !!mutedStates[stem.id];
-                  const isFocused = stem.id === focusPart;
-                  return (
-                    <button
-                      key={stem.id}
-                      onClick={() => onToggleMute(stem.id)}
-                      className={`text-xs px-3 py-1.5 rounded-xl font-medium flex items-center gap-1.5 transition border ${
-                        isMuted
-                          ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700/80 ring-1 ring-rose-400 dark:ring-rose-500/40'
-                          : isFocused
-                          ? 'bg-blue-50 dark:bg-blue-950/60 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800'
-                          : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      {isMuted ? (
-                        <VolumeX className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                      ) : (
-                        <Volume2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                      )}
-                      <span>{stem.name}</span>
-                      {isFocused && (
-                        <span className="text-[10px] px-1 py-0.2 rounded bg-blue-200/80 dark:bg-blue-800/80 text-blue-800 dark:text-blue-200 font-semibold uppercase">
-                          Focus
-                        </span>
-                      )}
-                      <span className={`text-[10px] ml-0.5 ${isMuted ? 'text-rose-600 dark:text-rose-400 font-bold' : 'text-slate-400 dark:text-slate-500'}`}>
-                        {isMuted ? 'OFF' : 'ON'}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           </div>
 
