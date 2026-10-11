@@ -152,8 +152,6 @@ export default function App() {
         onBackToSongs={handleBackToSongs}
         theme={theme}
         onToggleTheme={toggleTheme}
-        canInstall={canInstall}
-        onInstall={promptInstall}
       />
 
       <main className="flex-1">
