@@ -57,22 +57,21 @@ export default function Mixer({
                   </h3>
                 </div>
               </div>
-
-              <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-blue-700 dark:text-blue-300 border border-slate-200 dark:border-slate-700 w-fit">
-                {linkedHarmonyVolume}%
-              </span>
             </div>
 
             {/* Unified Slider */}
-            <div className="py-2">
+            <div className="flex items-center gap-3 py-2">
               <input
                 type="range"
                 min="0"
                 max="100"
                 value={linkedHarmonyVolume}
                 onChange={(e) => onLinkedHarmonyVolumeChange(Number(e.target.value))}
-                className="w-full h-3"
+                className="flex-1 h-3"
               />
+              <span className="font-bold font-mono text-sm sm:text-base text-black dark:text-white w-8 text-right shrink-0">
+                {linkedHarmonyVolume}
+              </span>
             </div>
 
             {/* Individual Mute Buttons */}
@@ -133,30 +132,24 @@ export default function Mixer({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border border-slate-200 dark:border-slate-700">
-                    {mutedStates['beat'] ? 'Muted' : `${beatVolume}%`}
-                  </span>
-
-                  <button
-                    onClick={() => onToggleMute('beat')}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition border ${
-                      mutedStates['beat']
-                        ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700/80'
-                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    {mutedStates['beat'] ? (
-                      <VolumeX className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                    ) : (
-                      <Volume2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                    )}
-                    <span>{mutedStates['beat'] ? 'MUTED' : 'Mute'}</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => onToggleMute('beat')}
+                  className={`flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold transition border ${
+                    mutedStates['beat']
+                      ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700/80'
+                      : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  {mutedStates['beat'] ? (
+                    <VolumeX className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                  ) : (
+                    <Volume2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                  )}
+                  <span>{mutedStates['beat'] ? 'MUTED' : 'Mute'}</span>
+                </button>
               </div>
 
-              <div className="py-1">
+              <div className="flex items-center gap-3 py-1">
                 <input
                   type="range"
                   min="0"
@@ -164,8 +157,11 @@ export default function Mixer({
                   value={beatVolume}
                   onChange={(e) => onBeatVolumeChange(Number(e.target.value))}
                   disabled={mutedStates['beat']}
-                  className={`w-full h-3 ${mutedStates['beat'] ? 'opacity-40 pointer-events-none' : ''}`}
+                  className={`flex-1 h-3 ${mutedStates['beat'] ? 'opacity-40 pointer-events-none' : ''}`}
                 />
+                <span className={`font-bold font-mono text-sm sm:text-base text-black dark:text-white w-8 text-right shrink-0 ${mutedStates['beat'] ? 'opacity-40' : ''}`}>
+                  {beatVolume}
+                </span>
               </div>
             </div>
           )}
@@ -204,35 +200,29 @@ export default function Mixer({
                     </h3>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                      {isMuted ? 'Muted' : `${vol}%`}
-                    </span>
-
-                    <button
-                      onClick={() => onToggleMute(stem.id)}
-                      className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition border ${
-                        isMuted
-                          ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700/80 ring-1 ring-rose-400 dark:ring-rose-500/40'
-                          : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      {isMuted ? (
-                        <>
-                          <VolumeX className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                          <span>MUTED</span>
-                        </>
-                      ) : (
-                        <>
-                          <Volume2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                          <span>Mute</span>
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <button
+                    onClick={() => onToggleMute(stem.id)}
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition border ${
+                      isMuted
+                        ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700/80 ring-1 ring-rose-400 dark:ring-rose-500/40'
+                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                    }`}
+                  >
+                    {isMuted ? (
+                      <>
+                        <VolumeX className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                        <span>MUTED</span>
+                      </>
+                    ) : (
+                      <>
+                        <Volume2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                        <span>Mute</span>
+                      </>
+                    )}
+                  </button>
                 </div>
 
-                <div className="py-1">
+                <div className="flex items-center gap-3 py-1">
                   <input
                     type="range"
                     min="0"
@@ -240,8 +230,11 @@ export default function Mixer({
                     value={vol}
                     onChange={(e) => onSingleStemVolumeChange(stem.id, Number(e.target.value))}
                     disabled={isMuted}
-                    className={`w-full h-3 ${isMuted ? 'opacity-40 pointer-events-none' : ''}`}
+                    className={`flex-1 h-3 ${isMuted ? 'opacity-40 pointer-events-none' : ''}`}
                   />
+                  <span className={`font-bold font-mono text-sm sm:text-base text-black dark:text-white w-8 text-right shrink-0 ${isMuted ? 'opacity-40' : ''}`}>
+                    {vol}
+                  </span>
                 </div>
               </div>
             );
@@ -262,30 +255,24 @@ export default function Mixer({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-emerald-700 dark:text-emerald-300 border border-slate-200 dark:border-slate-700">
-                    {mutedStates['beat'] ? 'Muted' : `${beatVolume}%`}
-                  </span>
-
-                  <button
-                    onClick={() => onToggleMute('beat')}
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition border ${
-                      mutedStates['beat']
-                        ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700/80'
-                        : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                    }`}
-                  >
-                    {mutedStates['beat'] ? (
-                      <VolumeX className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
-                    ) : (
-                      <Volume2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
-                    )}
-                    <span>{mutedStates['beat'] ? 'MUTED' : 'Mute'}</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => onToggleMute('beat')}
+                  className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-semibold transition border ${
+                    mutedStates['beat']
+                      ? 'bg-rose-100 dark:bg-rose-950/80 text-rose-700 dark:text-rose-300 border-rose-300 dark:border-rose-700/80'
+                      : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  {mutedStates['beat'] ? (
+                    <VolumeX className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
+                  ) : (
+                    <Volume2 className="w-3.5 h-3.5 text-slate-500 dark:text-slate-400" />
+                  )}
+                  <span>{mutedStates['beat'] ? 'MUTED' : 'Mute'}</span>
+                </button>
               </div>
 
-              <div className="py-1">
+              <div className="flex items-center gap-3 py-1">
                 <input
                   type="range"
                   min="0"
@@ -293,8 +280,11 @@ export default function Mixer({
                   value={beatVolume}
                   onChange={(e) => onBeatVolumeChange(Number(e.target.value))}
                   disabled={mutedStates['beat']}
-                  className={`w-full h-3 ${mutedStates['beat'] ? 'opacity-40 pointer-events-none' : ''}`}
+                  className={`flex-1 h-3 ${mutedStates['beat'] ? 'opacity-40 pointer-events-none' : ''}`}
                 />
+                <span className={`font-bold font-mono text-sm sm:text-base text-black dark:text-white w-8 text-right shrink-0 ${mutedStates['beat'] ? 'opacity-40' : ''}`}>
+                  {beatVolume}
+                </span>
               </div>
             </div>
           )}
