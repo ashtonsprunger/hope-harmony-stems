@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SectionSelector from './SectionSelector';
 import FocusSelector from './FocusSelector';
 import Mixer from './Mixer';
@@ -7,9 +7,19 @@ import SheetMusicModal from './SheetMusicModal';
 import { useStemPlayer } from '../hooks/useStemPlayer';
 
 export default function SongPlayer({ song, onBackToSongs }) {
-  const [activeSectionId, setActiveSectionId] = useState(
-    song.sections?.[0]?.id || ''
-  );
+  // Speed / section initial state: check localStorage or 1st in list
+  const [activeSectionId, setActiveSectionId] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`hh_speed_${song.id}`);
+      if (saved && song.sections?.some((s) => s.id === saved)) {
+        return saved;
+      }
+    } catch (e) {
+      console.warn('Could not read saved speed from localStorage', e);
+    }
+    // Default is 1st in list always
+    return song.sections?.[0]?.id || '';
+  });
 
   // Sheet Music Modal state
   const [isSheetOpen, setIsSheetOpen] = useState(false);
@@ -19,11 +29,28 @@ export default function SongPlayer({ song, onBackToSongs }) {
   const activeSection =
     song.sections?.find((s) => s.id === activeSectionId) || song.sections?.[0];
 
-  const player = useStemPlayer(activeSection);
+  const player = useStemPlayer(activeSection, song.id);
 
   const handleSelectSection = (newSection) => {
     setActiveSectionId(newSection.id);
+    try {
+      localStorage.setItem(`hh_speed_${song.id}`, newSection.id);
+    } catch (e) {
+      console.warn('Could not save speed to localStorage', e);
+    }
   };
+
+  // Keep activeSectionId in sync if song changes
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`hh_speed_${song.id}`);
+      if (saved && song.sections?.some((s) => s.id === saved)) {
+        setActiveSectionId(saved);
+        return;
+      }
+    } catch (e) {}
+    setActiveSectionId(song.sections?.[0]?.id || '');
+  }, [song.id]);
 
   // Support string or array format for sheetMusic / pdf
   const rawSheetMusic = song.sheetMusic || song.pdf;

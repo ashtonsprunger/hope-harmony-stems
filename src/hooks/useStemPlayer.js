@@ -1,14 +1,63 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-export function useStemPlayer(section) {
+export function useStemPlayer(section, songId) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingError, setLoadingError] = useState(null);
 
-  // Focus: 'none' or stem id (e.g. 'tenor')
-  const [focusPart, setFocusPart] = useState('none');
+  // Focus: 'none' or stem id (e.g. 'soprano')
+  // Default is 1st in the list always, or restored from localStorage
+  const [focusPart, setFocusPartState] = useState(() => {
+    if (songId) {
+      try {
+        const saved = localStorage.getItem(`hh_part_${songId}`);
+        if (saved) {
+          if (saved === 'none' || section?.stems?.some((s) => s.id === saved)) {
+            return saved;
+          }
+        }
+      } catch (e) {
+        console.warn('Could not read saved part from localStorage', e);
+      }
+    }
+    // 1st in list always
+    return section?.stems?.[0]?.id || 'none';
+  });
+
+  const setFocusPart = useCallback((newPart) => {
+    setFocusPartState(newPart);
+    if (songId) {
+      try {
+        localStorage.setItem(`hh_part_${songId}`, newPart);
+      } catch (e) {
+        console.warn('Could not save part to localStorage', e);
+      }
+    }
+  }, [songId]);
+
+  // Keep focusPart in sync when songId or section changes
+  useEffect(() => {
+    if (!songId || !section) return;
+    try {
+      const saved = localStorage.getItem(`hh_part_${songId}`);
+      if (saved) {
+        if (saved === 'none' || section.stems?.some((s) => s.id === saved)) {
+          setFocusPartState(saved);
+          return;
+        }
+      }
+    } catch (e) {}
+
+    // Default to 1st in the list if current focusPart is not in section stems
+    setFocusPartState((prev) => {
+      if (prev && (prev === 'none' || section.stems?.some((s) => s.id === prev))) {
+        return prev;
+      }
+      return section.stems?.[0]?.id || 'none';
+    });
+  }, [songId, section]);
 
   // Volumes (0 to 100)
   // For unlinked / individual stems: { [stemId]: number }
