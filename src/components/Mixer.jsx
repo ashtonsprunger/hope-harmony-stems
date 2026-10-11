@@ -16,15 +16,6 @@ export default function Mixer({
   const stems = section?.stems || [];
   const hasBeat = !!section?.beat;
 
-  const focusedStem = stems.find((s) => s.id === focusPart);
-  const otherStems = stems.filter((s) => s.id !== focusPart);
-  const focusedIndex = stems.findIndex((s) => s.id === focusPart);
-  const focusedColorClass = focusedStem
-    ? getPartColor(focusedIndex >= 0 ? focusedIndex : 0, focusedStem.name)
-    : '';
-  const focusedVol = focusedStem ? (stemVolumes[focusedStem.id] ?? 100) : 100;
-  const isFocusedMuted = focusedStem ? !!mutedStates[focusedStem.id] : false;
-
   // Colors for harmony parts to give distinct visual anchors
   const getPartColor = (index, name = '') => {
     const lower = name.toLowerCase();
@@ -41,6 +32,15 @@ export default function Mixer({
     ];
     return colors[index % colors.length];
   };
+
+  const focusedStem = stems.find((s) => s.id === focusPart);
+  const otherStems = stems.filter((s) => s.id !== focusPart);
+  const focusedIndex = stems.findIndex((s) => s.id === focusPart);
+  const focusedColorClass = focusedStem
+    ? getPartColor(focusedIndex >= 0 ? focusedIndex : 0, focusedStem.name)
+    : '';
+  const focusedVol = focusedStem ? (stemVolumes[focusedStem.id] ?? 100) : 100;
+  const isFocusedMuted = focusedStem ? !!mutedStates[focusedStem.id] : false;
 
   return (
     <div className="space-y-4">
