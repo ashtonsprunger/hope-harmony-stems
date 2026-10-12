@@ -117,6 +117,8 @@ export function useStemPlayer(section, songId, allSections = []) {
   const durationRef = useRef(0);
   const prevSongIdRef = useRef(songId);
   const startPlaybackRef = useRef(null);
+  const lastUiUpdateRef = useRef(0);
+  const preloadTimerRef = useRef(null);
 
   useEffect(() => {
     durationRef.current = duration;
@@ -263,42 +265,50 @@ export function useStemPlayer(section, songId, allSections = []) {
     // Helper to silently preload and decode alternate speeds in the background
     const triggerBackgroundPreloads = () => {
       if (!allSections || allSections.length <= 1) return;
-      const altSections = allSections.filter((s) => s.id !== section.id && !sectionCacheRef.current[s.id]);
+      if (preloadTimerRef.current) {
+        clearTimeout(preloadTimerRef.current);
+        preloadTimerRef.current = null;
+      }
 
-      altSections.forEach(async (altSection) => {
-        try {
-          const tracks = [
-            ...(altSection.stems || []).map((s) => ({ id: s.id, file: s.file })),
-            ...(altSection.beat ? [{ id: 'beat', file: altSection.beat }] : []),
-          ];
-          const altBuffers = {};
-          let altDuration = 0;
+      preloadTimerRef.current = setTimeout(async () => {
+        if (isCancelled || prevSongIdRef.current !== songId) return;
+        const altSections = allSections.filter((s) => s.id !== section.id && !sectionCacheRef.current[s.id]);
 
-          await Promise.all(
-            tracks.map(async (track) => {
+        for (const altSection of altSections) {
+          if (isCancelled || prevSongIdRef.current !== songId) break;
+          try {
+            const tracks = [
+              ...(altSection.stems || []).map((s) => ({ id: s.id, file: s.file })),
+              ...(altSection.beat ? [{ id: 'beat', file: altSection.beat }] : []),
+            ];
+            const altBuffers = {};
+            let altDuration = 0;
+
+            for (const track of tracks) {
+              if (isCancelled || prevSongIdRef.current !== songId) break;
               try {
                 const res = await fetch(track.file);
-                if (!res.ok) return;
+                if (!res.ok) continue;
                 const ab = await res.arrayBuffer();
+                if (isCancelled || prevSongIdRef.current !== songId) break;
                 const buf = await ctx.decodeAudioData(ab);
-                if (!isCancelled && prevSongIdRef.current === songId) {
-                  altBuffers[track.id] = buf;
-                  if (buf.duration > altDuration) altDuration = buf.duration;
-                }
+                altBuffers[track.id] = buf;
+                if (buf.duration > altDuration) altDuration = buf.duration;
+                await new Promise((r) => setTimeout(r, 150));
               } catch (e) {
                 // Background preload error ignored
               }
-            })
-          );
+            }
 
-          if (!isCancelled && prevSongIdRef.current === songId && Object.keys(altBuffers).length > 0) {
-            sectionCacheRef.current[altSection.id] = {
-              buffers: altBuffers,
-              duration: altDuration,
-            };
-          }
-        } catch (e) {}
-      });
+            if (!isCancelled && prevSongIdRef.current === songId && Object.keys(altBuffers).length > 0) {
+              sectionCacheRef.current[altSection.id] = {
+                buffers: altBuffers,
+                duration: altDuration,
+              };
+            }
+          } catch (e) {}
+        }
+      }, 3500);
     };
 
     // Check if section is ALREADY in memory cache (Instant 0ms switch!)
@@ -308,6 +318,10 @@ export function useStemPlayer(section, songId, allSections = []) {
       triggerBackgroundPreloads();
       return () => {
         isCancelled = true;
+        if (preloadTimerRef.current) {
+          clearTimeout(preloadTimerRef.current);
+          preloadTimerRef.current = null;
+        }
       };
     }
 
@@ -378,6 +392,10 @@ export function useStemPlayer(section, songId, allSections = []) {
 
     return () => {
       isCancelled = true;
+      if (preloadTimerRef.current) {
+        clearTimeout(preloadTimerRef.current);
+        preloadTimerRef.current = null;
+      }
       Object.values(sourceNodesRef.current).forEach((source) => {
         try { source.stop(); } catch (e) { /* ignore */ }
       });
@@ -393,7 +411,7 @@ export function useStemPlayer(section, songId, allSections = []) {
     });
   }, [section, focusPart, stemVolumes, linkedHarmonyVolume, beatVolume, mutedStates, applyGainToNode]);
 
-  // Animation frame loop to keep currentTime synced with audio clock
+  // Animation frame loop to keep currentTime synced with audio clock (throttled to ~20 FPS)
   const updateProgress = useCallback(() => {
     if (!isPlayingRef.current || !audioCtxRef.current) return;
 
@@ -408,11 +426,19 @@ export function useStemPlayer(section, songId, allSections = []) {
       setCurrentTime(0);
       currentTimeRef.current = 0;
       offsetAtStartRef.current = 0;
+      lastUiUpdateRef.current = performance.now();
       return;
     }
 
-    setCurrentTime(current);
     currentTimeRef.current = current;
+
+    // Throttle React state updates to ~20 FPS (every 50ms) to avoid 120Hz re-render overhead on mobile
+    const now = performance.now();
+    if (now - lastUiUpdateRef.current >= 50) {
+      lastUiUpdateRef.current = now;
+      setCurrentTime(current);
+    }
+
     animFrameRef.current = requestAnimationFrame(updateProgress);
   }, [duration]);
 
@@ -432,8 +458,8 @@ export function useStemPlayer(section, songId, allSections = []) {
       applyGainToNode(id, node, true);
     });
 
-    // Schedule slightly in future for sample-accurate simultaneous trigger
-    const startTime = ctx.currentTime + 0.04;
+    // Schedule slightly in future for sample-accurate simultaneous trigger (+60ms for mobile safety)
+    const startTime = ctx.currentTime + 0.06;
     const dur = explicitDuration || durationRef.current || duration;
     const clampedOffset = Math.max(0, Math.min(offset, dur > 0.05 ? dur - 0.05 : 0));
 
@@ -458,6 +484,7 @@ export function useStemPlayer(section, songId, allSections = []) {
     offsetAtStartRef.current = clampedOffset;
     isPlayingRef.current = true;
     setIsPlaying(true);
+    lastUiUpdateRef.current = 0; // Trigger immediate first frame update
 
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     animFrameRef.current = requestAnimationFrame(updateProgress);
@@ -481,6 +508,7 @@ export function useStemPlayer(section, songId, allSections = []) {
       offsetAtStartRef.current = Math.min(dur, Math.max(0, offsetAtStartRef.current + elapsed));
       setCurrentTime(offsetAtStartRef.current);
       currentTimeRef.current = offsetAtStartRef.current;
+      lastUiUpdateRef.current = performance.now();
     }
 
     isPlayingRef.current = false;
@@ -514,6 +542,7 @@ export function useStemPlayer(section, songId, allSections = []) {
       offsetAtStartRef.current = clamped;
       setCurrentTime(clamped);
       currentTimeRef.current = clamped;
+      lastUiUpdateRef.current = performance.now();
     }
   }, [duration, stopPlayback, startPlayback]);
 
