@@ -97,13 +97,14 @@ function patchEnvelopeIfNeeded() {
     sampleDuration,
     noteDuration
   ) {
+    // Run the full AHDSR setup including the natural release ramp down to zero
     originalSetupEnvelope.call(this, audioContext, envelope, zone, volume, when, sampleDuration, noteDuration);
 
-    // DSP Anti-Click: 3.5ms micro-attack curve eliminates step discontinuities
+    // DSP Anti-Click: Smooth micro-attack (3.5ms) without wiping out the release ramp to zero
     try {
-      envelope.gain.cancelScheduledValues(when);
+      const targetVol = Math.max(0.0001, (zone?.ahdsr?.[0]?.volume ?? 1.0) * volume * 0.9);
       envelope.gain.setValueAtTime(0.0001, when);
-      envelope.gain.linearRampToValueAtTime(volume * 0.9, when + 0.0035);
+      envelope.gain.linearRampToValueAtTime(targetVol, when + 0.0035);
     } catch (e) {
       // AudioParam scheduling safety fallback
     }

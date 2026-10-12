@@ -2,6 +2,7 @@
   {
     "id": "12-days",
     "title": "12 Days of Christmas",
+    "hidden": false,
     "notes": [
       "Ignore the last page of the sheet music for now."
     ],
@@ -69,7 +70,8 @@
   },
   {
     "id": "12-days-midi",
-    "title": "Test",
+    "title": "Test...",
+    "hidden": false,
     "type": "midi",
     "artist": "Traditional / Richard Gregory",
     "sheetMusic": "/songs/12-days/12-days.pdf",

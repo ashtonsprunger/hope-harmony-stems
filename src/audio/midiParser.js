@@ -276,17 +276,26 @@ export function parseMidi(arrayBuffer) {
   }
 
   function getMeasureAndBeat(tick) {
-    if (tick <= 0) {
+    if (tick <= 0 || !measures.length) {
       return { measure: 1, beat: 1, timeSig: `${measures[0]?.num || 4}/${measures[0]?.denom || 4}` };
     }
+    let low = 0;
+    let high = measures.length - 1;
     let m = measures[0];
-    // Binary search or linear search
-    for (let i = 0; i < measures.length; i++) {
-      if (tick >= measures[i].startTick && tick < measures[i].endTick) {
-        m = measures[i];
+
+    while (low <= high) {
+      const mid = (low + high) >> 1;
+      const candidate = measures[mid];
+      if (tick < candidate.startTick) {
+        high = mid - 1;
+      } else if (tick >= candidate.endTick) {
+        low = mid + 1;
+      } else {
+        m = candidate;
         break;
       }
     }
+
     const tickInMeasure = Math.max(0, tick - m.startTick);
     const beat = Math.floor(tickInMeasure / m.ticksPerBeat) + 1;
     return {

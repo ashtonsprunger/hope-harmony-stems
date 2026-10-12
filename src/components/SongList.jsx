@@ -2,7 +2,12 @@ import React from 'react';
 import { Disc, ArrowRight } from 'lucide-react';
 
 export default function SongList({ songs, onSelectSong }) {
-  const songList = songs || [];
+  const songList = (songs || []).filter((song) => {
+    if (song.hidden === true || song.hidden === 'true') return false;
+    if (song.hide === true || song.hide === 'true') return false;
+    if (song.visible === false || song.visible === 'false') return false;
+    return true;
+  });
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 sm:px-6">

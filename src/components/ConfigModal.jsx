@@ -7,6 +7,7 @@ const SAMPLE_JSON = `[
     "title": "My Song Title",
     "artist": "Composer Name",
     "key": "G Major",
+    "hidden": false,
     "sections": [
       {
         "id": "full-tempo",
@@ -71,7 +72,7 @@ export default function ConfigModal({ isOpen, onClose }) {
               <span>Step 2: Add Entry to <code className="text-purple-300">public/songs.json</code></span>
             </div>
             <p className="text-slate-400">
-              Each song can have any number of sections (e.g., Performance Tempo, Practice Slow) and any number of harmony parts (SATB, SSA, 5-part, etc.). The <code className="text-purple-300">beat</code> track is optional!
+              Each song can have any number of sections (e.g., Performance Tempo, Practice Slow) and any number of harmony parts (SATB, SSA, 5-part, etc.). The <code className="text-purple-300">beat</code> track is optional, and you can set <code className="text-purple-300">"hidden": true</code> to hide a song from the catalogue!
             </p>
 
             <div className="relative mt-2">

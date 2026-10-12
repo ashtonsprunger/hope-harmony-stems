@@ -97,6 +97,10 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
   const scheduledIndicesRef = useRef({}); // partId -> nextNoteIndexToSchedule
   const animationFrameIdRef = useRef(null);
   const scheduleIntervalIdRef = useRef(null);
+  const lastUiUpdateRef = useRef(0);
+  const currentMeasureRef = useRef(1);
+  const currentBeatRef = useRef(1);
+  const currentTimeSigRef = useRef('4/4');
 
   // Dynamic Volume / Mute Refs
   const focusPartRef = useRef(focusPart);
@@ -287,6 +291,9 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
 
         // Initial measure/beat
         const mb = parsed.getMeasureAndBeat(0);
+        currentMeasureRef.current = mb.measure;
+        currentBeatRef.current = mb.beat;
+        currentTimeSigRef.current = mb.timeSig;
         setCurrentMeasure(mb.measure);
         setCurrentBeat(mb.beat);
         setCurrentTimeSig(mb.timeSig);
@@ -371,12 +378,9 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
     const audioCurTime = audioCtx.currentTime;
     const songCurTime = Math.max(0, audioCurTime - audioStartTimeRef.current);
 
-    // Lookahead window: from current playback time up to 300ms in the future
-    const lookaheadSecs = 0.3;
-    const windowStartSecs = songCurTime;
+    // Lookahead window: 1.5s lookahead buffer provides immune playback against mobile main-thread stalls
+    const lookaheadSecs = 1.5;
     const windowEndSecs = songCurTime + lookaheadSecs;
-
-    const windowStartTick = parsed.timeToTick(windowStartSecs, currentSpeed);
     const windowEndTick = parsed.timeToTick(windowEndSecs, currentSpeed);
 
     const trackMap = trackNotesMapRef.current;
@@ -398,35 +402,34 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
         const note = notes[idx];
         if (note.startTick > windowEndTick) break;
 
-        if (note.startTick >= windowStartTick - (parsed.ppq / 4)) {
-          const noteStartSecs = parsed.tickToTime(note.startTick, currentSpeed);
+        const noteStartSecs = parsed.tickToTime(note.startTick, currentSpeed);
+        const when = audioStartTimeRef.current + noteStartSecs;
+
+        // Schedule if the note is in the future or not older than 150ms in the past
+        if (when >= audioCurTime - 0.15) {
           const noteDurationSecs = Math.max(
             0.05,
             parsed.tickToTime(note.endTick, currentSpeed) - noteStartSecs
           );
 
-          const when = audioStartTimeRef.current + noteStartSecs;
+          const velScale = (note.velocity / 127) * (isBeat ? 1.0 : 0.85);
+          // For beat percussion (snare drum), always trigger at GM acoustic snare pitch (38)
+          // so the snare sample plays at 1.0x native pitch regardless of the raw MIDI note
+          const pitchToPlay = isBeat ? 38 : note.pitch;
+          const playDuration = isBeat ? Math.max(noteDurationSecs, 0.4) : noteDurationSecs;
 
-          if (when >= audioCurTime - 0.05) {
-            const velScale = (note.velocity / 127) * (isBeat ? 1.0 : 0.85);
-            // For beat percussion (snare drum), always trigger at GM acoustic snare pitch (38)
-            // so the snare sample plays at 1.0x native pitch regardless of the raw MIDI note
-            const pitchToPlay = isBeat ? 38 : note.pitch;
-            const playDuration = isBeat ? Math.max(noteDurationSecs, 0.4) : noteDurationSecs;
-
-            try {
-              player.queueWaveTable(
-                audioCtx,
-                gNode,
-                preset,
-                Math.max(audioCurTime, when),
-                pitchToPlay,
-                playDuration,
-                velScale
-              );
-            } catch (e) {
-              console.warn('Error scheduling note:', e);
-            }
+          try {
+            player.queueWaveTable(
+              audioCtx,
+              gNode,
+              preset,
+              Math.max(audioCurTime, when),
+              pitchToPlay,
+              playDuration,
+              velScale
+            );
+          } catch (e) {
+            console.warn('Error scheduling note:', e);
           }
         }
         idx++;
@@ -451,12 +454,16 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
 
     currentTimeRef.current = clamped;
     setCurrentTime(clamped);
+    lastUiUpdateRef.current = performance.now();
 
     if (parsed) {
       const curTick = parsed.timeToTick(clamped, speedRef.current);
       resetScheduledIndices(curTick);
 
       const mb = parsed.getMeasureAndBeat(curTick);
+      currentMeasureRef.current = mb.measure;
+      currentBeatRef.current = mb.beat;
+      currentTimeSigRef.current = mb.timeSig;
       setCurrentMeasure(mb.measure);
       setCurrentBeat(mb.beat);
       setCurrentTimeSig(mb.timeSig);
@@ -464,8 +471,9 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
 
     if (isPlayingRef.current && audioCtx) {
       audioStartTimeRef.current = audioCtx.currentTime - clamped;
+      scheduleLookahead();
     }
-  }, [resetScheduledIndices]);
+  }, [resetScheduledIndices, scheduleLookahead]);
 
   // Quick Jump (+/- seconds)
   const quickJump = useCallback((deltaSeconds) => {
@@ -515,11 +523,11 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
       isPlayingRef.current = true;
       setIsPlaying(true);
 
-      // Start Note Scheduling timer (every 40ms)
+      // Start Note Scheduling timer (every 50ms with 1.5s lookahead buffer)
       scheduleLookahead();
-      scheduleIntervalIdRef.current = setInterval(scheduleLookahead, 40);
+      scheduleIntervalIdRef.current = setInterval(scheduleLookahead, 50);
 
-      // Start UI animation frame loop for smooth scrubber and measure updates
+      // Start UI animation frame loop with throttled React state updates (20fps)
       const onFrame = () => {
         if (!isPlayingRef.current || !audioCtxRef.current) return;
 
@@ -539,14 +547,29 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
         }
 
         currentTimeRef.current = songCurTime;
-        setCurrentTime(songCurTime);
 
-        if (parsedMidiRef.current) {
-          const curTick = parsedMidiRef.current.timeToTick(songCurTime, speedRef.current);
-          const mb = parsedMidiRef.current.getMeasureAndBeat(curTick);
-          setCurrentMeasure(mb.measure);
-          setCurrentBeat(mb.beat);
-          setCurrentTimeSig(mb.timeSig);
+        // Throttle React state updates to ~20fps (every 50ms) to eliminate 120Hz render churn on Pixel 10 Pro
+        const now = performance.now();
+        if (now - lastUiUpdateRef.current >= 50) {
+          lastUiUpdateRef.current = now;
+          setCurrentTime(songCurTime);
+
+          if (parsedMidiRef.current) {
+            const curTick = parsedMidiRef.current.timeToTick(songCurTime, speedRef.current);
+            const mb = parsedMidiRef.current.getMeasureAndBeat(curTick);
+            if (mb.measure !== currentMeasureRef.current) {
+              currentMeasureRef.current = mb.measure;
+              setCurrentMeasure(mb.measure);
+            }
+            if (mb.beat !== currentBeatRef.current) {
+              currentBeatRef.current = mb.beat;
+              setCurrentBeat(mb.beat);
+            }
+            if (mb.timeSig !== currentTimeSigRef.current) {
+              currentTimeSigRef.current = mb.timeSig;
+              setCurrentTimeSig(mb.timeSig);
+            }
+          }
         }
 
         animationFrameIdRef.current = requestAnimationFrame(onFrame);
