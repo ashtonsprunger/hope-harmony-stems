@@ -5,6 +5,15 @@ const DEFAULT_SELECTED_PART_VOLUME = 100;
 const DEFAULT_OTHER_HARMONIES_VOLUME = 18;
 const DEFAULT_BEAT_VOLUME = 25;
 
+function isMobileDevice() {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const isMobileUa = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+  const isTouchScreen = Boolean(navigator.maxTouchPoints && navigator.maxTouchPoints > 1);
+  const isSmallScreen = typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 768px)').matches;
+  return isMobileUa || (isTouchScreen && isSmallScreen);
+}
+
 export function useStemPlayer(section, songId, allSections = []) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -262,9 +271,12 @@ export function useStemPlayer(section, songId, allSections = []) {
       }
     };
 
-    // Helper to silently preload and decode alternate speeds in the background
+    // Helper to silently preload and decode alternate speeds in the background (desktop only)
     const triggerBackgroundPreloads = () => {
       if (!allSections || allSections.length <= 1) return;
+      // Disable background preloading completely on mobile to conserve RAM and eliminate audio glitches
+      if (isMobileDevice()) return;
+
       if (preloadTimerRef.current) {
         clearTimeout(preloadTimerRef.current);
         preloadTimerRef.current = null;
@@ -371,10 +383,20 @@ export function useStemPlayer(section, songId, allSections = []) {
             setIsLoading(false);
           } else {
             // Save active section into in-memory cache
-            sectionCacheRef.current[section.id] = {
-              buffers: loadedBuffers,
-              duration: maxDuration,
-            };
+            if (isMobileDevice()) {
+              // On mobile, keep only active section in memory to prevent RAM exhaustion and GC pauses
+              sectionCacheRef.current = {
+                [section.id]: {
+                  buffers: loadedBuffers,
+                  duration: maxDuration,
+                },
+              };
+            } else {
+              sectionCacheRef.current[section.id] = {
+                buffers: loadedBuffers,
+                duration: maxDuration,
+              };
+            }
 
             activateSectionBuffers(loadedBuffers, maxDuration);
             triggerBackgroundPreloads();
