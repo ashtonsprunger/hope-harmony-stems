@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { StickyNote } from 'lucide-react';
 import SectionSelector from './SectionSelector';
 import FocusSelector from './FocusSelector';
 import Mixer from './Mixer';
@@ -12,6 +13,7 @@ export default function SongPlayer({
   isSheetOpen,
   onToggleSheet,
   onCloseSheet,
+  onSheetZoomChange,
 }) {
   // Speed / section initial state: check localStorage or 1st in list
   const [activeSectionId, setActiveSectionId] = useState(() => {
@@ -62,6 +64,10 @@ export default function SongPlayer({
     : [];
 
   const hasSheetMusic = sheetMusicList.length > 0;
+  const hasNotes = Boolean(
+    song.notes &&
+    (typeof song.notes === 'string' ? song.notes.trim().length > 0 : song.notes.length > 0)
+  );
 
   const [sheetPage, setSheetPage] = useState(1);
   const [sheetNumPages, setSheetNumPages] = useState(1);
@@ -110,6 +116,31 @@ export default function SongPlayer({
           mutedStates={player.mutedStates}
           onToggleMute={player.toggleMute}
         />
+
+        {/* 4. Song Notes Card (Warm Rehearsal Callout) */}
+        {hasNotes && (
+          <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 shadow-sm transition-colors">
+            <div className="flex items-center gap-2 mb-2 text-amber-900 dark:text-amber-300">
+              <StickyNote className="w-4 h-4 sm:w-5 sm:h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+              <h3 className="font-bold text-base sm:text-lg">
+                Notes
+              </h3>
+            </div>
+            {Array.isArray(song.notes) ? (
+              <div className="space-y-2 text-amber-950/80 dark:text-amber-200/80">
+                {song.notes.map((note, index) => (
+                  <p key={index} className="text-sm sm:text-base whitespace-pre-line leading-relaxed">
+                    {note}
+                  </p>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm sm:text-base text-amber-950/80 dark:text-amber-200/80 whitespace-pre-line leading-relaxed">
+                {song.notes}
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* 📄 Full-Width Non-Scrolling Sheet Music Modal */}
@@ -121,6 +152,7 @@ export default function SongPlayer({
           songTitle={song.title}
           pageNumber={sheetPage}
           onNumPagesChange={setSheetNumPages}
+          onZoomChange={onSheetZoomChange}
         />
       )}
 
@@ -140,6 +172,8 @@ export default function SongPlayer({
         numPages={sheetNumPages}
         onPrevPage={handlePrevPage}
         onNextPage={handleNextPage}
+        hasSheetMusic={hasSheetMusic}
+        onToggleSheet={onToggleSheet}
       />
     </div>
   );

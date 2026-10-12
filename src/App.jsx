@@ -23,10 +23,12 @@ export default function App() {
     : Boolean(rawSheetMusic);
 
   const [isSheetOpen, setIsSheetOpen] = useState(false);
+  const [isSheetZoomed, setIsSheetZoomed] = useState(false);
 
   useEffect(() => {
     if (!selectedSong || !hasSheetMusic) {
       setIsSheetOpen(false);
+      setIsSheetZoomed(false);
       return;
     }
     try {
@@ -35,12 +37,14 @@ export default function App() {
     } catch (e) {
       setIsSheetOpen(false);
     }
+    setIsSheetZoomed(false);
   }, [selectedSong?.id, hasSheetMusic]);
 
   const handleToggleSheet = useCallback(() => {
     if (!selectedSong) return;
     setIsSheetOpen((prev) => {
       const next = !prev;
+      if (!next) setIsSheetZoomed(false);
       try {
         localStorage.setItem(`hh_sheet_open_${selectedSong.id}`, String(next));
       } catch (e) {}
@@ -163,6 +167,8 @@ export default function App() {
   // Back to song list
   const handleBackToSongs = () => {
     setSelectedSong(null);
+    setIsSheetOpen(false);
+    setIsSheetZoomed(false);
     if (window.location.hash) {
       try {
         window.history.back();
@@ -186,6 +192,7 @@ export default function App() {
         onToggleTheme={toggleTheme}
         hasSheetMusic={hasSheetMusic}
         isSheetOpen={isSheetOpen}
+        isSheetZoomed={isSheetZoomed}
         onToggleSheet={handleToggleSheet}
       />
 
@@ -210,7 +217,11 @@ export default function App() {
             onBackToSongs={handleBackToSongs}
             isSheetOpen={isSheetOpen}
             onToggleSheet={handleToggleSheet}
-            onCloseSheet={() => setIsSheetOpen(false)}
+            onCloseSheet={() => {
+              setIsSheetOpen(false);
+              setIsSheetZoomed(false);
+            }}
+            onSheetZoomChange={setIsSheetZoomed}
           />
         ) : (
           <SongList

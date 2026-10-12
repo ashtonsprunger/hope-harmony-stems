@@ -1,23 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
-function loadSavedMix(songId) {
-  if (!songId) return null;
-  try {
-    const raw = localStorage.getItem(`hh_mix_v2_${songId}`);
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
-  }
-}
-
-function saveMixToStorage(songId, data) {
-  if (!songId) return;
-  try {
-    const existing = loadSavedMix(songId) || {};
-    const updated = { ...existing, ...data };
-    localStorage.setItem(`hh_mix_v2_${songId}`, JSON.stringify(updated));
-  } catch (e) {}
-}
+// Default volume constants per requirements
+const DEFAULT_SELECTED_PART_VOLUME = 100;
+const DEFAULT_OTHER_HARMONIES_VOLUME = 15;
+const DEFAULT_BEAT_VOLUME = 10;
 
 export function useStemPlayer(section, songId) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -78,34 +64,23 @@ export function useStemPlayer(section, songId) {
     });
   }, [songId, section]);
 
-  // Volumes & Mutes restored per song from localStorage
-  const initialMix = loadSavedMix(songId);
-
-  // Volumes (0 to 100)
+  // Volumes (0 to 100): in-memory defaults (selected part: 100, other harmonies: 15, beat: 10)
   // For unlinked / individual stems: { [stemId]: number }
-  const [stemVolumes, setStemVolumes] = useState(() => initialMix?.stemVolumes || {});
-  // When a focus is selected, other harmony parts share this linked volume (default 25%)
-  const [linkedHarmonyVolume, setLinkedHarmonyVolumeState] = useState(() =>
-    initialMix?.linkedHarmonyVolume !== undefined ? initialMix.linkedHarmonyVolume : 25
-  );
-  // Beat track volume (default 25% of slider range; 0-100% maps to 0-25% actual audio gain)
-  const [beatVolume, setBeatVolumeState] = useState(() =>
-    initialMix?.beatVolume !== undefined ? initialMix.beatVolume : 25
-  );
+  const [stemVolumes, setStemVolumes] = useState({});
+  // When a focus is selected, other harmony parts share this linked volume (default 15%)
+  const [linkedHarmonyVolume, setLinkedHarmonyVolumeState] = useState(DEFAULT_OTHER_HARMONIES_VOLUME);
+  // Beat track volume (default 10%)
+  const [beatVolume, setBeatVolumeState] = useState(DEFAULT_BEAT_VOLUME);
 
   // Mute states: { [stemId]: boolean, beat: boolean }
-  const [mutedStates, setMutedStates] = useState(() => initialMix?.mutedStates || {});
+  const [mutedStates, setMutedStates] = useState({});
 
-  // Sync saved mix when songId changes
+  // Reset volumes and mutes to standard defaults whenever songId changes
   useEffect(() => {
-    if (!songId) return;
-    const mix = loadSavedMix(songId);
-    if (mix) {
-      if (mix.stemVolumes) setStemVolumes(mix.stemVolumes);
-      if (mix.linkedHarmonyVolume !== undefined) setLinkedHarmonyVolumeState(mix.linkedHarmonyVolume);
-      if (mix.beatVolume !== undefined) setBeatVolumeState(mix.beatVolume);
-      if (mix.mutedStates) setMutedStates(mix.mutedStates);
-    }
+    setStemVolumes({});
+    setLinkedHarmonyVolumeState(DEFAULT_OTHER_HARMONIES_VOLUME);
+    setBeatVolumeState(DEFAULT_BEAT_VOLUME);
+    setMutedStates({});
   }, [songId]);
 
   // Refs to always have latest volume/mute/focus values in async audio callbacks
@@ -183,48 +158,30 @@ export function useStemPlayer(section, songId) {
     }
   }, []);
 
-  // Update stemVolumes state when section changes, preserving existing values and saving new defaults
+  // Update stemVolumes state when section changes, ensuring all stems have defaults
   useEffect(() => {
     if (!section) return;
 
     setStemVolumes((prev) => {
       const updated = { ...prev };
-      let changed = false;
       section.stems?.forEach((stem) => {
         if (updated[stem.id] === undefined) {
-          updated[stem.id] = 100;
-          changed = true;
+          updated[stem.id] = DEFAULT_SELECTED_PART_VOLUME;
         }
       });
-      if (changed && songId) {
-        saveMixToStorage(songId, { stemVolumes: updated });
-      }
       return updated;
     });
 
     setMutedStates((prev) => {
       const updated = { ...prev };
-      let changed = false;
-      if (updated['beat'] === undefined) {
-        updated['beat'] = false;
-        changed = true;
-      }
-      if (updated['harmonies'] === undefined) {
-        updated['harmonies'] = false;
-        changed = true;
-      }
+      if (updated['beat'] === undefined) updated['beat'] = false;
+      if (updated['harmonies'] === undefined) updated['harmonies'] = false;
       section.stems?.forEach((stem) => {
-        if (updated[stem.id] === undefined) {
-          updated[stem.id] = false;
-          changed = true;
-        }
+        if (updated[stem.id] === undefined) updated[stem.id] = false;
       });
-      if (changed && songId) {
-        saveMixToStorage(songId, { mutedStates: updated });
-      }
       return updated;
     });
-  }, [section, songId]);
+  }, [section]);
 
   // Load and decode all audio stems for the current section
   useEffect(() => {
@@ -448,32 +405,22 @@ export function useStemPlayer(section, songId) {
     seekTo(nextTime);
   }, [seekTo]);
 
-  // Volume & Mute setter helpers with localStorage persistence
+  // Volume & Mute setter helpers (in-memory session state only, no localStorage)
   const setSingleStemVolume = useCallback((stemId, volume) => {
-    setStemVolumes((prev) => {
-      const updated = { ...prev, [stemId]: volume };
-      saveMixToStorage(songId, { stemVolumes: updated });
-      return updated;
-    });
-  }, [songId]);
+    setStemVolumes((prev) => ({ ...prev, [stemId]: volume }));
+  }, []);
 
   const setLinkedHarmonyVolume = useCallback((volume) => {
     setLinkedHarmonyVolumeState(volume);
-    saveMixToStorage(songId, { linkedHarmonyVolume: volume });
-  }, [songId]);
+  }, []);
 
   const setBeatVolume = useCallback((volume) => {
     setBeatVolumeState(volume);
-    saveMixToStorage(songId, { beatVolume: volume });
-  }, [songId]);
+  }, []);
 
   const toggleMute = useCallback((id) => {
-    setMutedStates((prev) => {
-      const updated = { ...prev, [id]: !prev[id] };
-      saveMixToStorage(songId, { mutedStates: updated });
-      return updated;
-    });
-  }, [songId]);
+    setMutedStates((prev) => ({ ...prev, [id]: !prev[id] }));
+  }, []);
 
   return {
     isPlaying,

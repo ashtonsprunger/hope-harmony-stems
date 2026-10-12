@@ -2,64 +2,66 @@
   {
     "id": "12-days",
     "title": "12 Days of Christmas",
+    "notes": [
+      "Ignore the last page of the sheet music for now."
+    ],
     "artist": "Traditional / Richard Gregory",
     "tempoLabel": "Speed:",
     "partLabel": "Part:",
-    "sheetMusic": "/sheets/12-days.pdf",
+    "sheetMusic": "/songs/12-days/12-days.pdf",
     "key": "",
-    "notes": "",
     "sections": [
       {
         "id": "full-tempo",
         "name": "Full Speed",
-        "beat": "/audio/12-days/normal/beat.mp3",
+        "beat": "/songs/12-days/normal/beat.mp3",
         "stems": [
           {
             "id": "soprano",
             "name": "Soprano",
-            "file": "/audio/12-days/normal/soprano.mp3"
+            "file": "/songs/12-days/normal/soprano.mp3"
           },
           {
             "id": "alto",
             "name": "Alto",
-            "file": "/audio/12-days/normal/alto.mp3"
+            "file": "/songs/12-days/normal/alto.mp3"
           },
           {
             "id": "tenor",
             "name": "Tenor",
-            "file": "/audio/12-days/normal/tenor.mp3"
+            "file": "/songs/12-days/normal/tenor.mp3"
           },
           {
             "id": "bass",
             "name": "Bass",
-            "file": "/audio/12-days/normal/bass.mp3"
+            "file": "/songs/12-days/normal/bass.mp3"
           }
         ]
       },
       {
         "id": "slow-tempo",
         "name": "Slow",
-        "beat": "/audio/12-days/slow/beat.mp3",
+        "beat": "/songs/12-days/slow/beat.mp3",
         "stems": [
           {
             "id": "soprano",
             "name": "Soprano",
-            "file": "/audio/12-days/slow/soprano.mp3"
+            "file": "/songs/12-days/slow/soprano.mp3"
           },
           {
             "id": "alto",
             "name": "Alto",
-            "file": "/audio/12-days/slow/alto.mp3"
+            "file": "/songs/12-days/slow/alto.mp3"
           },
           {
             "id": "tenor",
             "name": "Tenor",
-            "file": "/audio/12-days/slow/tenor.mp3"
+            "file": "/songs/12-days/slow/tenor.mp3"
           },
           {
             "id": "bass",
             "name": "Bass",
-            "file": "/audio/12-days/slow/bass.mp3"
+            "file": "/songs/12-days/slow/bass.mp3"
           }
         ]
       }

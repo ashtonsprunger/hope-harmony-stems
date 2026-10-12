@@ -1,6 +1,18 @@
 import React from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 
+function getSliderTrackStyle(value, isMuted = false) {
+  const clamped = Math.max(0, Math.min(100, Number(value) || 0));
+  if (isMuted) {
+    return {
+      background: `linear-gradient(to right, #94a3b8 0%, #94a3b8 ${clamped}%, rgba(148, 163, 184, 0.2) ${clamped}%, rgba(148, 163, 184, 0.2) 100%)`,
+    };
+  }
+  return {
+    background: `linear-gradient(to right, #2563eb 0%, #2563eb ${clamped}%, rgba(148, 163, 184, 0.25) ${clamped}%, rgba(148, 163, 184, 0.25) 100%)`,
+  };
+}
+
 export default function Mixer({
   section,
   focusPart,
@@ -27,12 +39,17 @@ export default function Mixer({
          ───────────────────────────────────────────────────────────── */}
       {focusPart !== 'none' && focusedStem && (
         <div className="space-y-3.5">
-          {/* 1. Selected Harmony Part */}
-          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 shadow-sm">
+          {/* 1. Selected Harmony Part (Hero Card) */}
+          <div className="p-4 sm:p-5 rounded-2xl bg-white dark:bg-slate-900/95 border-2 border-blue-500/40 dark:border-blue-500/50 shadow-sm ring-1 ring-blue-500/20">
             <div className="flex items-center justify-between gap-3 mb-2.5">
-              <h3 className="font-bold text-lg sm:text-xl text-slate-900 dark:text-slate-100">
-                {focusedStem.name}
-              </h3>
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="font-bold text-lg sm:text-xl text-slate-900 dark:text-slate-100 truncate">
+                  {focusedStem.name}
+                </h3>
+                <span className="text-[11px] sm:text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 shrink-0">
+                  Your Part
+                </span>
+              </div>
 
               <button
                 onClick={() => onToggleMute(focusedStem.id)}
@@ -59,9 +76,10 @@ export default function Mixer({
                 value={focusedVol}
                 onChange={(e) => onSingleStemVolumeChange(focusedStem.id, Number(e.target.value))}
                 disabled={isFocusedMuted}
-                className={`flex-1 h-3 ${isFocusedMuted ? 'opacity-40 pointer-events-none' : ''}`}
+                className={`flex-1 ${isFocusedMuted ? 'opacity-40 pointer-events-none' : ''}`}
+                style={getSliderTrackStyle(focusedVol, isFocusedMuted)}
               />
-              <span className={`font-bold font-mono text-sm sm:text-base text-black dark:text-white w-8 text-right shrink-0 ${isFocusedMuted ? 'opacity-40' : ''}`}>
+              <span className={`font-bold font-mono tabular-nums text-sm sm:text-base text-slate-900 dark:text-slate-100 w-8 text-right shrink-0 ${isFocusedMuted ? 'opacity-40' : ''}`}>
                 {focusedVol}
               </span>
             </div>
@@ -100,9 +118,10 @@ export default function Mixer({
                 value={linkedHarmonyVolume}
                 onChange={(e) => onLinkedHarmonyVolumeChange(Number(e.target.value))}
                 disabled={mutedStates['harmonies']}
-                className={`flex-1 h-3 ${mutedStates['harmonies'] ? 'opacity-40 pointer-events-none' : ''}`}
+                className={`flex-1 ${mutedStates['harmonies'] ? 'opacity-40 pointer-events-none' : ''}`}
+                style={getSliderTrackStyle(linkedHarmonyVolume, !!mutedStates['harmonies'])}
               />
-              <span className={`font-bold font-mono text-sm sm:text-base text-black dark:text-white w-8 text-right shrink-0 ${mutedStates['harmonies'] ? 'opacity-40' : ''}`}>
+              <span className={`font-bold font-mono tabular-nums text-sm sm:text-base text-slate-900 dark:text-slate-100 w-8 text-right shrink-0 ${mutedStates['harmonies'] ? 'opacity-40' : ''}`}>
                 {linkedHarmonyVolume}
               </span>
             </div>
@@ -141,9 +160,10 @@ export default function Mixer({
                   value={beatVolume}
                   onChange={(e) => onBeatVolumeChange(Number(e.target.value))}
                   disabled={mutedStates['beat']}
-                  className={`flex-1 h-3 ${mutedStates['beat'] ? 'opacity-40 pointer-events-none' : ''}`}
+                  className={`flex-1 ${mutedStates['beat'] ? 'opacity-40 pointer-events-none' : ''}`}
+                  style={getSliderTrackStyle(beatVolume, !!mutedStates['beat'])}
                 />
-                <span className={`font-bold font-mono text-sm sm:text-base text-black dark:text-white w-8 text-right shrink-0 ${mutedStates['beat'] ? 'opacity-40' : ''}`}>
+                <span className={`font-bold font-mono tabular-nums text-sm sm:text-base text-slate-900 dark:text-slate-100 w-8 text-right shrink-0 ${mutedStates['beat'] ? 'opacity-40' : ''}`}>
                   {beatVolume}
                 </span>
               </div>
@@ -197,9 +217,10 @@ export default function Mixer({
                     value={vol}
                     onChange={(e) => onSingleStemVolumeChange(stem.id, Number(e.target.value))}
                     disabled={isMuted}
-                    className={`flex-1 h-3 ${isMuted ? 'opacity-40 pointer-events-none' : ''}`}
+                    className={`flex-1 ${isMuted ? 'opacity-40 pointer-events-none' : ''}`}
+                    style={getSliderTrackStyle(vol, isMuted)}
                   />
-                  <span className={`font-bold font-mono text-sm sm:text-base text-black dark:text-white w-8 text-right shrink-0 ${isMuted ? 'opacity-40' : ''}`}>
+                  <span className={`font-bold font-mono tabular-nums text-sm sm:text-base text-slate-900 dark:text-slate-100 w-8 text-right shrink-0 ${isMuted ? 'opacity-40' : ''}`}>
                     {vol}
                   </span>
                 </div>
@@ -240,9 +261,10 @@ export default function Mixer({
                   value={beatVolume}
                   onChange={(e) => onBeatVolumeChange(Number(e.target.value))}
                   disabled={mutedStates['beat']}
-                  className={`flex-1 h-3 ${mutedStates['beat'] ? 'opacity-40 pointer-events-none' : ''}`}
+                  className={`flex-1 ${mutedStates['beat'] ? 'opacity-40 pointer-events-none' : ''}`}
+                  style={getSliderTrackStyle(beatVolume, !!mutedStates['beat'])}
                 />
-                <span className={`font-bold font-mono text-sm sm:text-base text-black dark:text-white w-8 text-right shrink-0 ${mutedStates['beat'] ? 'opacity-40' : ''}`}>
+                <span className={`font-bold font-mono tabular-nums text-sm sm:text-base text-slate-900 dark:text-slate-100 w-8 text-right shrink-0 ${mutedStates['beat'] ? 'opacity-40' : ''}`}>
                   {beatVolume}
                 </span>
               </div>

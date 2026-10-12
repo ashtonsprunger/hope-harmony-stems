@@ -1,5 +1,5 @@
-import React from 'react';
-import { Play, Pause, RotateCcw, RotateCw, Loader2, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import React, { useEffect, useRef } from 'react';
+import { Play, Pause, RotateCcw, RotateCw, Loader2, AlertCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 
 function formatTime(secs) {
   if (isNaN(secs) || secs < 0) return '0:00';
@@ -23,11 +23,30 @@ export default function PlaybackBar({
   numPages = 1,
   onPrevPage,
   onNextPage,
+  hasSheetMusic = false,
+  onToggleSheet,
 }) {
+  const playbackBarRef = useRef(null);
+
+  useEffect(() => {
+    const el = playbackBarRef.current;
+    if (!el) return;
+    const updateHeight = () => {
+      document.documentElement.style.setProperty('--playback-bar-height', `${el.offsetHeight}px`);
+    };
+    updateHeight();
+    const observer = new ResizeObserver(updateHeight);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800/90 shadow-[0_-10px_35px_rgba(0,0,0,0.12)] dark:shadow-[0_-12px_40px_rgba(0,0,0,0.6)] px-4 py-3 sm:py-4 transition-colors duration-200">
+    <div
+      ref={playbackBarRef}
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800/90 shadow-[0_-10px_35px_rgba(0,0,0,0.12)] dark:shadow-none px-4 py-3 sm:py-4 transition-colors duration-200"
+    >
       <div className="max-w-4xl mx-auto">
         {/* Loading error warning */}
         {loadingError && (
@@ -81,9 +100,9 @@ export default function PlaybackBar({
               value={currentTime}
               onChange={(e) => onSeek(Number(e.target.value))}
               disabled={isLoading || duration === 0}
-              className="timeline-scrubber w-full h-2.5 rounded-full cursor-pointer disabled:opacity-40 bg-slate-200 dark:bg-slate-800"
+              className={`w-full ${isLoading || duration === 0 ? 'opacity-40 pointer-events-none' : ''}`}
               style={{
-                background: `linear-gradient(to right, #2563eb 0%, #2563eb ${progressPercent}%, transparent ${progressPercent}%, transparent 100%)`,
+                background: `linear-gradient(to right, #2563eb 0%, #2563eb ${progressPercent}%, rgba(148, 163, 184, 0.25) ${progressPercent}%, rgba(148, 163, 184, 0.25) 100%)`,
               }}
             />
           </div>
@@ -93,49 +112,70 @@ export default function PlaybackBar({
           </span>
         </div>
 
-        {/* Transport Controls - Centered */}
-        <div className="flex items-center justify-center gap-3 sm:gap-5">
-          {/* Quick Jump -5s */}
-          <button
-            onClick={() => onQuickJump(-5)}
-            disabled={isLoading || duration === 0}
-            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-3 sm:py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-100 dark:border-slate-700/80 active:scale-95 transition disabled:opacity-40 font-bold text-xs sm:text-sm shadow-sm"
-            title="Rewind 5 seconds"
-          >
-            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
-            <span>-5s</span>
-          </button>
+        {/* Transport Controls - Centered with Sheet button at bottom right */}
+        <div className="relative flex items-center justify-center">
+          {/* Centered Controls */}
+          <div className="flex items-center justify-center gap-3 sm:gap-5">
+            {/* Quick Jump -5s */}
+            <button
+              onClick={() => onQuickJump(-5)}
+              disabled={isLoading || duration === 0}
+              className="flex items-center gap-1.5 px-3.5 sm:px-4 py-3 sm:py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-100 dark:border-slate-700/80 active:scale-95 transition disabled:opacity-40 font-bold text-xs sm:text-sm shadow-sm"
+              title="Rewind 5 seconds"
+            >
+              <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
+              <span>-5s</span>
+            </button>
 
-          {/* Master Play / Pause Button - Dead Centered */}
-          <button
-            onClick={onTogglePlayPause}
-            disabled={isLoading || duration === 0}
-            className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center transition-all duration-150 shadow-xl ${
-              isLoading || duration === 0
-                ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
-                : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/35 dark:shadow-blue-600/50 active:scale-95 border border-blue-400/40 ring-4 ring-blue-500/15'
-            }`}
-            title={isPlaying ? 'Pause' : 'Play'}
-          >
-            {isLoading ? (
-              <Loader2 className="w-7 h-7 sm:w-8 sm:h-8 animate-spin text-blue-200 dark:text-blue-300" />
-            ) : isPlaying ? (
-              <Pause className="w-8 h-8 sm:w-9 sm:h-9 fill-current" />
-            ) : (
-              <Play className="w-8 h-8 sm:w-9 sm:h-9 fill-current ml-1" />
-            )}
-          </button>
+            {/* Master Play / Pause Button - Dead Centered */}
+            <button
+              onClick={onTogglePlayPause}
+              disabled={isLoading || duration === 0}
+              className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl flex items-center justify-center transition-all duration-150 shadow-xl ${
+                isLoading || duration === 0
+                  ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed border border-slate-300 dark:border-slate-700'
+                  : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/35 dark:shadow-blue-600/50 active:scale-95 border border-blue-400/40 ring-4 ring-blue-500/15'
+              }`}
+              title={isPlaying ? 'Pause' : 'Play'}
+            >
+              {isLoading ? (
+                <Loader2 className="w-7 h-7 sm:w-8 sm:h-8 animate-spin text-blue-200 dark:text-blue-300" />
+              ) : isPlaying ? (
+                <Pause className="w-8 h-8 sm:w-9 sm:h-9 fill-current" />
+              ) : (
+                <Play className="w-8 h-8 sm:w-9 sm:h-9 fill-current ml-1" />
+              )}
+            </button>
 
-          {/* Quick Jump +5s */}
-          <button
-            onClick={() => onQuickJump(5)}
-            disabled={isLoading || duration === 0}
-            className="flex items-center gap-1.5 px-3.5 sm:px-4 py-3 sm:py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-100 dark:border-slate-700/80 active:scale-95 transition disabled:opacity-40 font-bold text-xs sm:text-sm shadow-sm"
-            title="Fast forward 5 seconds"
-          >
-            <span>+5s</span>
-            <RotateCw className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
-          </button>
+            {/* Quick Jump +5s */}
+            <button
+              onClick={() => onQuickJump(5)}
+              disabled={isLoading || duration === 0}
+              className="flex items-center gap-1.5 px-3.5 sm:px-4 py-3 sm:py-3.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 dark:text-slate-100 dark:border-slate-700/80 active:scale-95 transition disabled:opacity-40 font-bold text-xs sm:text-sm shadow-sm"
+              title="Fast forward 5 seconds"
+            >
+              <span>+5s</span>
+              <RotateCw className="w-4 h-4 sm:w-5 sm:h-5 text-blue-600 dark:text-blue-400" />
+            </button>
+          </div>
+
+          {/* Sheet Music Button - Positioned in Bottom Right */}
+          {hasSheetMusic && (
+            <div className="absolute right-0 top-1/2 -translate-y-1/2">
+              <button
+                onClick={onToggleSheet}
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center border transition active:scale-95 shadow-sm ${
+                  isSheetOpen
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-blue-600/25 ring-2 ring-blue-500/30'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white border-slate-200 dark:border-slate-700'
+                }`}
+                title={isSheetOpen ? 'Hide Sheet Music' : 'View Sheet Music'}
+                aria-label={isSheetOpen ? 'Hide Sheet Music' : 'View Sheet Music'}
+              >
+                <FileText className={`w-5 h-5 sm:w-5.5 sm:h-5.5 ${isSheetOpen ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

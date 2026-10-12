@@ -14,11 +14,27 @@ export default function SheetMusicModal({
   songTitle,
   pageNumber,
   onNumPagesChange,
+  onZoomChange,
 }) {
   const [zoomIndex, setZoomIndex] = useState(0); // 0 = 1x, 1 = 1.6x, 2 = 2.4x
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  // Sync zoom status to parent so navigation bar dropshadow only appears when sub-bar is hidden
+  useEffect(() => {
+    if (!isOpen) {
+      onZoomChange?.(false);
+    } else {
+      onZoomChange?.(zoomIndex > 0);
+    }
+  }, [isOpen, zoomIndex, onZoomChange]);
+
+  useEffect(() => {
+    return () => {
+      onZoomChange?.(false);
+    };
+  }, [onZoomChange]);
 
   const containerRef = useRef(null);
   const canvasRef = useRef(null);
@@ -148,10 +164,9 @@ export default function SheetMusicModal({
     const scaledW = canvasWidth * scale;
     const scaledH = canvasHeight * scale;
 
-    const padding = 12;
-    const maxPanX = Math.max(0, (scaledW - containerWidth) / 2 + padding);
-    const maxPanY = Math.max(0, (scaledH - containerHeight) / 2 + padding);
-    const topPanY = Math.max(0, (scaledH - containerHeight) / 2 + padding);
+    const maxPanX = Math.max(0, (scaledW - containerWidth) / 2);
+    const maxPanY = Math.max(0, (scaledH - containerHeight) / 2);
+    const topPanY = Math.max(0, (scaledH - containerHeight) / 2);
 
     return { maxPanX, maxPanY, topPanY };
   }, []);
@@ -194,6 +209,7 @@ export default function SheetMusicModal({
         const { topPanY } = getBounds(nextScale);
         setPan({ x: 0, y: topPanY });
       }
+      onZoomChange?.(next > 0);
       return next;
     });
   };
@@ -240,12 +256,15 @@ export default function SheetMusicModal({
 
   return (
     <div
-      style={{ top: 'var(--header-height, 65px)' }}
-      className="fixed inset-x-0 bottom-0 z-30 flex flex-col bg-slate-100 dark:bg-slate-950 select-none pb-48 sm:pb-52 transition-colors duration-200"
+      style={{
+        top: 'var(--header-height, 65px)',
+        bottom: 'var(--playback-bar-height, 160px)',
+      }}
+      className="fixed inset-x-0 z-30 flex flex-col bg-white dark:bg-slate-950 select-none transition-colors duration-200"
     >
       {/* Top Modal Sub-Bar (Sits directly under main app navbar) - Hidden when zoomed in for more screen real estate */}
       {zoomIndex === 0 && (
-        <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-6 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-sm shrink-0">
+        <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-6 bg-white/95 dark:bg-slate-900/95 border-b border-slate-200 dark:border-slate-800 shadow-[0_10px_35px_rgba(0,0,0,0.12)] dark:shadow-none relative z-10 shrink-0">
           {/* Hint banner */}
           <div className="flex items-center gap-2 text-sm sm:text-base font-semibold text-slate-800 dark:text-slate-200 truncate">
             <span>Tap sheet to zoom</span>
@@ -271,7 +290,7 @@ export default function SheetMusicModal({
       {/* Main Full-Width Non-Scrolling Canvas Container */}
       <div
         ref={containerRef}
-        className="flex-1 w-full overflow-hidden flex items-center justify-center p-2 touch-none cursor-pointer relative"
+        className="flex-1 w-full overflow-hidden flex items-center justify-center touch-none cursor-pointer relative"
         onMouseDown={(e) => handlePointerDown(e.clientX, e.clientY)}
         onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
         onMouseUp={handlePointerUp}
@@ -303,7 +322,7 @@ export default function SheetMusicModal({
           >
             <canvas
               ref={canvasRef}
-              className="rounded-lg shadow-xl bg-white border border-slate-200/80 dark:border-slate-700/60 max-w-none"
+              className="bg-white max-w-none shadow-sm dark:border dark:border-slate-800"
             />
           </div>
         )}
