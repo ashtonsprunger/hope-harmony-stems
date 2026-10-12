@@ -144,8 +144,8 @@ export default function PlaybackBar({
 
         {/* Transport Controls - Centered with Speed button on left and Sheet button on right */}
         <div className="relative flex items-center justify-center">
-          {/* Speed / Version Button - Positioned in Bottom Left (when sheet music is open) */}
-          {isSheetOpen && sections && sections.length > 1 && (
+          {/* Speed / Version Button - Positioned in Bottom Left (when multiple speeds exist) */}
+          {sections && sections.length > 1 && (
             <div ref={speedMenuRef} className="absolute left-0 top-1/2 -translate-y-1/2">
               {isSpeedMenuOpen && (
                 <div className="absolute left-0 bottom-full mb-3 min-w-[150px] sm:min-w-[170px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 shadow-xl shadow-slate-900/10 dark:shadow-black/50 z-50 animate-in fade-in zoom-in-95 duration-150">
