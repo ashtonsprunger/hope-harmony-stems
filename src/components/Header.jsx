@@ -15,6 +15,10 @@ export default function Header({
 
   // Dynamically observe header height so modals fit snugly under it even when multiline notes expand
   useEffect(() => {
+    if (isSheetOpen && isSheetZoomed) {
+      document.documentElement.style.setProperty('--header-height', '0px');
+      return;
+    }
     const el = headerRef.current;
     if (!el) return;
     const updateHeight = () => {
@@ -28,6 +32,11 @@ export default function Header({
 
   // When viewing a song: navbar has left arrow back button, song title / notes, and sheet toggle
   if (currentSong) {
+    // Hide header completely when zoomed into sheet music for maximum reading space
+    if (isSheetOpen && isSheetZoomed) {
+      return null;
+    }
+
     const rawNotes = currentSong?.notes;
     const notesList = Array.isArray(rawNotes)
       ? rawNotes.filter((n) => typeof n === 'string' && n.trim().length > 0)

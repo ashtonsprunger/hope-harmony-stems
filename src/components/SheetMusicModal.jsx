@@ -185,14 +185,18 @@ export default function SheetMusicModal({
     }
   }, [pageNumber, zoomIndex, getBounds]);
 
-  // Resize listener
+  // Re-render when container resizes (window resize, orientation change, or expanding to top: 0 when top bars hide)
   useEffect(() => {
     if (!isOpen) return;
-    const handleResize = () => {
-      if (!isLoading && pdfDocRef.current) renderPage();
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      if (!isLoading && pdfDocRef.current) {
+        renderPage();
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [isOpen, isLoading, renderPage]);
 
   // Tap to cycle zoom: 1x -> 1.6x -> 2.4x -> 1x
@@ -257,7 +261,7 @@ export default function SheetMusicModal({
   return (
     <div
       style={{
-        top: 'var(--header-height, 65px)',
+        top: zoomIndex > 0 ? 0 : 'var(--header-height, 65px)',
         bottom: 'var(--playback-bar-height, 160px)',
       }}
       className="fixed inset-x-0 z-30 flex flex-col bg-white dark:bg-slate-950 select-none transition-colors duration-200"
