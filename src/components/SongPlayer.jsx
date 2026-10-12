@@ -53,7 +53,7 @@ export default function SongPlayer({
   const activeSection =
     song.sections?.find((s) => s.id === activeSectionId) || song.sections?.[0];
 
-  const player = useStemPlayer(activeSection, song.id);
+  const player = useStemPlayer(activeSection, song.id, song.sections);
 
   // Support string or array format for sheetMusic / pdf
   const rawSheetMusic = song.sheetMusic || song.pdf;
@@ -174,6 +174,11 @@ export default function SongPlayer({
         onNextPage={handleNextPage}
         hasSheetMusic={hasSheetMusic}
         onToggleSheet={onToggleSheet}
+        // Speed / section selector
+        sections={song.sections}
+        activeSectionId={activeSectionId}
+        onSelectSection={handleSelectSection}
+        speedLabel={song.tempoLabel || song.sectionLabel || song.versionLabel || 'Speed:'}
       />
     </div>
   );

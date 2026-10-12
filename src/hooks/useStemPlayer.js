@@ -5,12 +5,16 @@ const DEFAULT_SELECTED_PART_VOLUME = 100;
 const DEFAULT_OTHER_HARMONIES_VOLUME = 15;
 const DEFAULT_BEAT_VOLUME = 10;
 
-export function useStemPlayer(section, songId) {
+export function useStemPlayer(section, songId, allSections = []) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [loadingError, setLoadingError] = useState(null);
+
+  // In-memory cache of decoded AudioBuffers per section for instant (0ms) tempo/speed switches
+  // Format: { [sectionId]: { buffers: { [trackId]: AudioBuffer }, duration: number } }
+  const sectionCacheRef = useRef({});
 
   // Focus: 'none' or stem id (e.g. 'soprano')
   // Default is 1st in the list always, or restored from localStorage
@@ -75,8 +79,9 @@ export function useStemPlayer(section, songId) {
   // Mute states: { [stemId]: boolean, beat: boolean }
   const [mutedStates, setMutedStates] = useState({});
 
-  // Reset volumes and mutes to standard defaults whenever songId changes
+  // Reset cache, volumes, and mutes to standard defaults whenever songId changes
   useEffect(() => {
+    sectionCacheRef.current = {};
     setStemVolumes({});
     setLinkedHarmonyVolumeState(DEFAULT_OTHER_HARMONIES_VOLUME);
     setBeatVolumeState(DEFAULT_BEAT_VOLUME);
@@ -190,7 +195,7 @@ export function useStemPlayer(section, songId) {
     });
   }, [section]);
 
-  // Load and decode all audio stems for the current section
+  // Load and decode audio stems with in-memory caching and background preloading for instant speed switches
   useEffect(() => {
     if (!section) return;
 
@@ -208,11 +213,6 @@ export function useStemPlayer(section, songId) {
       : 0;
     const shouldResume = isSameSong && isPlayingRef.current;
 
-    setIsLoading(true);
-    setLoadingError(null);
-    setIsPlaying(false);
-    isPlayingRef.current = false;
-
     // If switching to a completely different song, reset scrub position to 0
     if (!isSameSong) {
       setCurrentTime(0);
@@ -228,6 +228,94 @@ export function useStemPlayer(section, songId) {
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
 
     const ctx = getAudioContext();
+
+    // Helper to activate decoded buffers and start playback seamlessly
+    const activateSectionBuffers = (buffers, maxDuration) => {
+      buffersRef.current = buffers;
+      setDuration(maxDuration);
+      durationRef.current = maxDuration;
+
+      // Re-create dedicated GainNodes connected to master
+      gainNodesRef.current = {};
+      Object.keys(buffers).forEach((trackId) => {
+        const gainNode = ctx.createGain();
+        gainNode.connect(masterGainRef.current);
+        applyGainToNode(trackId, gainNode, true);
+        gainNodesRef.current[trackId] = gainNode;
+      });
+
+      // Map target position proportionally with full decimal precision
+      const targetTime = progressRatio > 0 ? progressRatio * maxDuration : 0;
+      const clampedTarget = Math.max(0, Math.min(targetTime, maxDuration > 0.1 ? maxDuration - 0.05 : 0));
+
+      setCurrentTime(clampedTarget);
+      currentTimeRef.current = clampedTarget;
+      offsetAtStartRef.current = clampedTarget;
+
+      setIsLoading(false);
+      setLoadingError(null);
+
+      if (shouldResume && startPlaybackRef.current) {
+        startPlaybackRef.current(clampedTarget, maxDuration);
+      }
+    };
+
+    // Helper to silently preload and decode alternate speeds in the background
+    const triggerBackgroundPreloads = () => {
+      if (!allSections || allSections.length <= 1) return;
+      const altSections = allSections.filter((s) => s.id !== section.id && !sectionCacheRef.current[s.id]);
+
+      altSections.forEach(async (altSection) => {
+        try {
+          const tracks = [
+            ...(altSection.stems || []).map((s) => ({ id: s.id, file: s.file })),
+            ...(altSection.beat ? [{ id: 'beat', file: altSection.beat }] : []),
+          ];
+          const altBuffers = {};
+          let altDuration = 0;
+
+          await Promise.all(
+            tracks.map(async (track) => {
+              try {
+                const res = await fetch(track.file);
+                if (!res.ok) return;
+                const ab = await res.arrayBuffer();
+                const buf = await ctx.decodeAudioData(ab);
+                if (!isCancelled && prevSongIdRef.current === songId) {
+                  altBuffers[track.id] = buf;
+                  if (buf.duration > altDuration) altDuration = buf.duration;
+                }
+              } catch (e) {
+                // Background preload error ignored
+              }
+            })
+          );
+
+          if (!isCancelled && prevSongIdRef.current === songId && Object.keys(altBuffers).length > 0) {
+            sectionCacheRef.current[altSection.id] = {
+              buffers: altBuffers,
+              duration: altDuration,
+            };
+          }
+        } catch (e) {}
+      });
+    };
+
+    // Check if section is ALREADY in memory cache (Instant 0ms switch!)
+    const cached = sectionCacheRef.current[section.id];
+    if (cached && Object.keys(cached.buffers).length > 0) {
+      activateSectionBuffers(cached.buffers, cached.duration);
+      triggerBackgroundPreloads();
+      return () => {
+        isCancelled = true;
+      };
+    }
+
+    // Cache miss: load active section
+    setIsLoading(true);
+    setLoadingError(null);
+    setIsPlaying(false);
+    isPlayingRef.current = false;
     buffersRef.current = {};
     gainNodesRef.current = {};
 
@@ -239,6 +327,8 @@ export function useStemPlayer(section, songId) {
     async function loadTracks() {
       try {
         let maxDuration = 0;
+        const loadedBuffers = {};
+
         const loadPromises = tracksToLoad.map(async (track) => {
           try {
             const response = await fetch(track.file);
@@ -249,19 +339,10 @@ export function useStemPlayer(section, songId) {
             const decodedBuffer = await ctx.decodeAudioData(arrayBuffer);
 
             if (!isCancelled) {
-              buffersRef.current[track.id] = decodedBuffer;
+              loadedBuffers[track.id] = decodedBuffer;
               if (decodedBuffer.duration > maxDuration) {
                 maxDuration = decodedBuffer.duration;
               }
-
-              // Create dedicated GainNode for this track
-              const gainNode = ctx.createGain();
-              gainNode.connect(masterGainRef.current);
-
-              // Immediately initialize the gain to the user's configured volume!
-              applyGainToNode(track.id, gainNode, true);
-
-              gainNodesRef.current[track.id] = gainNode;
             }
           } catch (err) {
             console.warn(`Error loading track ${track.id}:`, err);
@@ -271,29 +352,19 @@ export function useStemPlayer(section, songId) {
         await Promise.all(loadPromises);
 
         if (!isCancelled) {
-          if (Object.keys(buffersRef.current).length === 0) {
+          if (Object.keys(loadedBuffers).length === 0) {
             setLoadingError('Could not load audio tracks for this section.');
+            setIsLoading(false);
           } else {
-            setDuration(maxDuration);
-            durationRef.current = maxDuration;
-            // Re-apply gains across all newly instantiated gain nodes to guarantee volume accuracy
-            Object.entries(gainNodesRef.current).forEach(([id, node]) => {
-              applyGainToNode(id, node, true);
-            });
+            // Save active section into in-memory cache
+            sectionCacheRef.current[section.id] = {
+              buffers: loadedBuffers,
+              duration: maxDuration,
+            };
 
-            // Map target position proportionally with full decimal precision
-            const targetTime = progressRatio > 0 ? progressRatio * maxDuration : 0;
-            const clampedTarget = Math.max(0, Math.min(targetTime, maxDuration > 0.1 ? maxDuration - 0.05 : 0));
-
-            setCurrentTime(clampedTarget);
-            currentTimeRef.current = clampedTarget;
-            offsetAtStartRef.current = clampedTarget;
-
-            if (shouldResume && startPlaybackRef.current) {
-              startPlaybackRef.current(clampedTarget, maxDuration);
-            }
+            activateSectionBuffers(loadedBuffers, maxDuration);
+            triggerBackgroundPreloads();
           }
-          setIsLoading(false);
         }
       } catch (err) {
         if (!isCancelled) {
@@ -313,7 +384,7 @@ export function useStemPlayer(section, songId) {
       sourceNodesRef.current = {};
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [section, songId, getAudioContext, applyGainToNode]);
+  }, [section, songId, allSections, getAudioContext, applyGainToNode]);
 
   // Update gains in real time whenever volumes, mutes, or focus changes
   useEffect(() => {

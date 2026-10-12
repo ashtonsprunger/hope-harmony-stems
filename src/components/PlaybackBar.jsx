@@ -1,5 +1,5 @@
-import React, { useEffect, useRef } from 'react';
-import { Play, Pause, RotateCcw, RotateCw, Loader2, AlertCircle, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Play, Pause, RotateCcw, RotateCw, Loader2, AlertCircle, ChevronLeft, ChevronRight, FileText, Gauge, Check } from 'lucide-react';
 
 function formatTime(secs) {
   if (isNaN(secs) || secs < 0) return '0:00';
@@ -25,6 +25,11 @@ export default function PlaybackBar({
   onNextPage,
   hasSheetMusic = false,
   onToggleSheet,
+  // Speed / section selector
+  sections = [],
+  activeSectionId = '',
+  onSelectSection,
+  speedLabel = 'Speed:',
 }) {
   const playbackBarRef = useRef(null);
 
@@ -39,6 +44,31 @@ export default function PlaybackBar({
     observer.observe(el);
     return () => observer.disconnect();
   }, []);
+
+  const [isSpeedMenuOpen, setIsSpeedMenuOpen] = useState(false);
+  const speedMenuRef = useRef(null);
+
+  // Close speed menu when sheet closes or clicking outside
+  useEffect(() => {
+    if (!isSheetOpen) {
+      setIsSpeedMenuOpen(false);
+    }
+  }, [isSheetOpen]);
+
+  useEffect(() => {
+    if (!isSpeedMenuOpen) return;
+    const handleClickOutside = (e) => {
+      if (speedMenuRef.current && !speedMenuRef.current.contains(e.target)) {
+        setIsSpeedMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [isSpeedMenuOpen]);
 
   const progressPercent = duration > 0 ? (currentTime / duration) * 100 : 0;
 
@@ -112,8 +142,56 @@ export default function PlaybackBar({
           </span>
         </div>
 
-        {/* Transport Controls - Centered with Sheet button at bottom right */}
+        {/* Transport Controls - Centered with Speed button on left and Sheet button on right */}
         <div className="relative flex items-center justify-center">
+          {/* Speed / Version Button - Positioned in Bottom Left (when sheet music is open) */}
+          {isSheetOpen && sections && sections.length > 1 && (
+            <div ref={speedMenuRef} className="absolute left-0 top-1/2 -translate-y-1/2">
+              {isSpeedMenuOpen && (
+                <div className="absolute left-0 bottom-full mb-3 min-w-[150px] sm:min-w-[170px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 shadow-xl shadow-slate-900/10 dark:shadow-black/50 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                    {speedLabel.replace(':', '')}
+                  </div>
+                  <div className="space-y-0.5">
+                    {sections.map((sec) => {
+                      const isSelected = sec.id === activeSectionId;
+                      return (
+                        <button
+                          key={sec.id}
+                          onClick={() => {
+                            if (onSelectSection) onSelectSection(sec);
+                            setIsSpeedMenuOpen(false);
+                          }}
+                          className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition active:scale-[0.98] ${
+                            isSelected
+                              ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400'
+                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                        >
+                          <span className="truncate">{sec.name}</span>
+                          {isSelected && <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <button
+                onClick={() => setIsSpeedMenuOpen((prev) => !prev)}
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center border transition active:scale-95 shadow-sm ${
+                  isSpeedMenuOpen
+                    ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-blue-600/25 ring-2 ring-blue-500/30'
+                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white border-slate-200 dark:border-slate-700'
+                }`}
+                title={`${speedLabel.replace(':', '')}: ${sections.find((s) => s.id === activeSectionId)?.name || ''}`}
+                aria-label={`Select ${speedLabel.replace(':', '').toLowerCase()}`}
+              >
+                <Gauge className={`w-5 h-5 sm:w-5.5 sm:h-5.5 ${isSpeedMenuOpen ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
+              </button>
+            </div>
+          )}
+
           {/* Centered Controls */}
           <div className="flex items-center justify-center gap-3 sm:gap-5">
             {/* Quick Jump -5s */}
