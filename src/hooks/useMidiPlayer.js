@@ -95,6 +95,7 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
   const speedRef = useRef(speed);
   const audioStartTimeRef = useRef(0);
   const scheduledIndicesRef = useRef({}); // partId -> nextNoteIndexToSchedule
+  const activeEnvelopesRef = useRef({ soprano: [], alto: [], tenor: [], bass: [], beat: [] });
   const animationFrameIdRef = useRef(null);
   const scheduleIntervalIdRef = useRef(null);
   const lastUiUpdateRef = useRef(0);
@@ -278,9 +279,31 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
           }
         }
 
-        // Sort all notes by startTick
+        // Sort all notes and enforce max 2 concurrent voices per vocal part (1 for beat)
+        const maxVoicesPerPart = { soprano: 2, alto: 2, tenor: 2, bass: 2, beat: 1 };
         for (const [pId, notes] of trackMap.entries()) {
           notes.sort((a, b) => a.startTick - b.startTick);
+          const maxVoices = maxVoicesPerPart[pId] || 2;
+          const activeNotes = [];
+
+          for (const n of notes) {
+            for (let i = activeNotes.length - 1; i >= 0; i--) {
+              if (activeNotes[i].endTick <= n.startTick) {
+                activeNotes.splice(i, 1);
+              }
+            }
+
+            while (activeNotes.length >= maxVoices) {
+              activeNotes.sort((a, b) => a.startTick - b.startTick);
+              const oldest = activeNotes.shift();
+              if (oldest.endTick > n.startTick) {
+                oldest.endTick = n.startTick;
+              }
+            }
+
+            activeNotes.push(n);
+          }
+
           trackMap.set(pId, notes);
         }
         trackNotesMapRef.current = trackMap;
@@ -355,6 +378,7 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
 
   // Reset note scheduler indices to a given tick
   const resetScheduledIndices = useCallback((atTick) => {
+    activeEnvelopesRef.current = { soprano: [], alto: [], tenor: [], bass: [], beat: [] };
     const trackMap = trackNotesMapRef.current;
     const newIndices = {};
     for (const [partId, notes] of trackMap.entries()) {
@@ -398,6 +422,9 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
       const preset = isBeat ? beatPreset : pianoPreset;
       if (!preset) continue;
 
+      const maxVoices = isBeat ? 1 : 2;
+      const activeEnvelopes = activeEnvelopesRef.current[partId] || [];
+
       while (idx < notes.length) {
         const note = notes[idx];
         if (note.startTick > windowEndTick) break;
@@ -407,6 +434,49 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
 
         // Schedule if the note is in the future or not older than 150ms in the past
         if (when >= audioCurTime - 0.15) {
+          const targetWhen = Math.max(audioCurTime, when);
+
+          // 1. Purge envelopes that finished before targetWhen
+          for (let i = activeEnvelopes.length - 1; i >= 0; i--) {
+            if (activeEnvelopes[i].stopTime <= targetWhen) {
+              activeEnvelopes.splice(i, 1);
+            }
+          }
+
+          // 2. Cut decay of notes that nominally ended at or before this note starts
+          // so release tails don't bleed into the new note
+          for (const active of activeEnvelopes) {
+            if (active.nominalEndTime <= targetWhen + 0.02) {
+              try {
+                const cutTime = Math.max(audioCurTime, targetWhen);
+                active.env.gain.cancelScheduledValues(cutTime);
+                active.env.gain.setValueAtTime(active.env.gain.value, cutTime);
+                active.env.gain.linearRampToValueAtTime(0.0001, cutTime + 0.004);
+                if (active.env.audioBufferSourceNode) {
+                  active.env.audioBufferSourceNode.stop(cutTime + 0.005);
+                }
+                active.stopTime = cutTime + 0.005;
+              } catch (e) {}
+            }
+          }
+
+          // 3. Enforce maximum 2 voices per part (1 for beat):
+          // If we already have maxVoices active, steal the oldest voice and cut its decay at targetWhen
+          while (activeEnvelopes.length >= maxVoices) {
+            const oldest = activeEnvelopes.shift();
+            if (oldest?.env) {
+              try {
+                const cutTime = Math.max(audioCurTime, targetWhen);
+                oldest.env.gain.cancelScheduledValues(cutTime);
+                oldest.env.gain.setValueAtTime(oldest.env.gain.value, cutTime);
+                oldest.env.gain.linearRampToValueAtTime(0.0001, cutTime + 0.005);
+                if (oldest.env.audioBufferSourceNode) {
+                  oldest.env.audioBufferSourceNode.stop(cutTime + 0.006);
+                }
+              } catch (e) {}
+            }
+          }
+
           const noteDurationSecs = Math.max(
             0.05,
             parsed.tickToTime(note.endTick, currentSpeed) - noteStartSecs
@@ -416,18 +486,30 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
           // For beat percussion (snare drum), always trigger at GM acoustic snare pitch (38)
           // so the snare sample plays at 1.0x native pitch regardless of the raw MIDI note
           const pitchToPlay = isBeat ? 38 : note.pitch;
-          const playDuration = isBeat ? Math.max(noteDurationSecs, 0.4) : noteDurationSecs;
+          // Crisp snare hit without stacking
+          const playDuration = isBeat
+            ? Math.min(0.2, Math.max(0.05, noteDurationSecs))
+            : noteDurationSecs;
 
           try {
-            player.queueWaveTable(
+            const env = player.queueWaveTable(
               audioCtx,
               gNode,
               preset,
-              Math.max(audioCurTime, when),
+              targetWhen,
               pitchToPlay,
               playDuration,
               velScale
             );
+
+            if (env) {
+              activeEnvelopes.push({
+                env,
+                when: targetWhen,
+                stopTime: targetWhen + playDuration,
+                nominalEndTime: when + noteDurationSecs
+              });
+            }
           } catch (e) {
             console.warn('Error scheduling note:', e);
           }
@@ -436,6 +518,7 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
       }
 
       scheduledIndices[partId] = idx;
+      activeEnvelopesRef.current[partId] = activeEnvelopes;
     }
   }, []);
 
@@ -496,6 +579,7 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
           playerRef.current.cancelQueue(audioCtx);
         } catch (e) {}
       }
+      activeEnvelopesRef.current = { soprano: [], alto: [], tenor: [], bass: [], beat: [] };
 
       if (scheduleIntervalIdRef.current) {
         clearInterval(scheduleIntervalIdRef.current);
