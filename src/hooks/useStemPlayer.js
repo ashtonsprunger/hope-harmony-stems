@@ -109,6 +109,13 @@ export function useStemPlayer(section, songId) {
   const animFrameRef = useRef(null);
   const isPlayingRef = useRef(false);
   const currentTimeRef = useRef(0);
+  const durationRef = useRef(0);
+  const prevSongIdRef = useRef(songId);
+  const startPlaybackRef = useRef(null);
+
+  useEffect(() => {
+    durationRef.current = duration;
+  }, [duration]);
 
   // Initialize or resume AudioContext
   const getAudioContext = useCallback(() => {
@@ -188,19 +195,37 @@ export function useStemPlayer(section, songId) {
     if (!section) return;
 
     let isCancelled = false;
+
+    // Detect if this is a speed switch within the same song or a different song
+    const isSameSong = prevSongIdRef.current === songId;
+    prevSongIdRef.current = songId;
+
+    const curDuration = durationRef.current;
+    const curTime = currentTimeRef.current;
+    // Calculate progress ratio (exact decimal, e.g. 0.3541) if switching speeds within the same song
+    const progressRatio = isSameSong && curDuration > 0
+      ? Math.min(1, Math.max(0, curTime / curDuration))
+      : 0;
+    const shouldResume = isSameSong && isPlayingRef.current;
+
     setIsLoading(true);
     setLoadingError(null);
     setIsPlaying(false);
     isPlayingRef.current = false;
-    setCurrentTime(0);
-    currentTimeRef.current = 0;
-    offsetAtStartRef.current = 0;
+
+    // If switching to a completely different song, reset scrub position to 0
+    if (!isSameSong) {
+      setCurrentTime(0);
+      currentTimeRef.current = 0;
+      offsetAtStartRef.current = 0;
+    }
 
     // Stop and cleanup previous sources and nodes
     Object.values(sourceNodesRef.current).forEach((source) => {
       try { source.stop(); } catch (e) { /* ignore */ }
     });
     sourceNodesRef.current = {};
+    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
 
     const ctx = getAudioContext();
     buffersRef.current = {};
@@ -250,10 +275,23 @@ export function useStemPlayer(section, songId) {
             setLoadingError('Could not load audio tracks for this section.');
           } else {
             setDuration(maxDuration);
+            durationRef.current = maxDuration;
             // Re-apply gains across all newly instantiated gain nodes to guarantee volume accuracy
             Object.entries(gainNodesRef.current).forEach(([id, node]) => {
               applyGainToNode(id, node, true);
             });
+
+            // Map target position proportionally with full decimal precision
+            const targetTime = progressRatio > 0 ? progressRatio * maxDuration : 0;
+            const clampedTarget = Math.max(0, Math.min(targetTime, maxDuration > 0.1 ? maxDuration - 0.05 : 0));
+
+            setCurrentTime(clampedTarget);
+            currentTimeRef.current = clampedTarget;
+            offsetAtStartRef.current = clampedTarget;
+
+            if (shouldResume && startPlaybackRef.current) {
+              startPlaybackRef.current(clampedTarget, maxDuration);
+            }
           }
           setIsLoading(false);
         }
@@ -275,7 +313,7 @@ export function useStemPlayer(section, songId) {
       sourceNodesRef.current = {};
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [section, getAudioContext, applyGainToNode]);
+  }, [section, songId, getAudioContext, applyGainToNode]);
 
   // Update gains in real time whenever volumes, mutes, or focus changes
   useEffect(() => {
@@ -291,8 +329,9 @@ export function useStemPlayer(section, songId) {
     const ctx = audioCtxRef.current;
     const elapsed = ctx.currentTime - playStartTimeRef.current;
     const current = offsetAtStartRef.current + elapsed;
+    const dur = durationRef.current || duration;
 
-    if (duration > 0 && current >= duration) {
+    if (dur > 0 && current >= dur) {
       // Reached the end
       stopPlayback();
       setCurrentTime(0);
@@ -307,7 +346,7 @@ export function useStemPlayer(section, songId) {
   }, [duration]);
 
   // Start all stems at the exact same microsecond
-  const startPlayback = useCallback((offset = 0) => {
+  const startPlayback = useCallback((offset = 0, explicitDuration = null) => {
     const ctx = getAudioContext();
     if (Object.keys(buffersRef.current).length === 0) return;
 
@@ -324,7 +363,8 @@ export function useStemPlayer(section, songId) {
 
     // Schedule slightly in future for sample-accurate simultaneous trigger
     const startTime = ctx.currentTime + 0.04;
-    const clampedOffset = Math.max(0, Math.min(offset, duration - 0.05));
+    const dur = explicitDuration || durationRef.current || duration;
+    const clampedOffset = Math.max(0, Math.min(offset, dur > 0.05 ? dur - 0.05 : 0));
 
     Object.entries(buffersRef.current).forEach(([id, buffer]) => {
       if (clampedOffset >= buffer.duration) return;
@@ -352,6 +392,11 @@ export function useStemPlayer(section, songId) {
     animFrameRef.current = requestAnimationFrame(updateProgress);
   }, [getAudioContext, duration, updateProgress, applyGainToNode]);
 
+  // Keep startPlaybackRef up to date for async speed-switching callback
+  useEffect(() => {
+    startPlaybackRef.current = startPlayback;
+  }, [startPlayback]);
+
   // Stop playback cleanly
   const stopPlayback = useCallback(() => {
     Object.values(sourceNodesRef.current).forEach((source) => {
@@ -361,7 +406,8 @@ export function useStemPlayer(section, songId) {
 
     if (isPlayingRef.current && audioCtxRef.current) {
       const elapsed = audioCtxRef.current.currentTime - playStartTimeRef.current;
-      offsetAtStartRef.current = Math.min(duration, Math.max(0, offsetAtStartRef.current + elapsed));
+      const dur = durationRef.current || duration;
+      offsetAtStartRef.current = Math.min(dur, Math.max(0, offsetAtStartRef.current + elapsed));
       setCurrentTime(offsetAtStartRef.current);
       currentTimeRef.current = offsetAtStartRef.current;
     }
@@ -386,7 +432,8 @@ export function useStemPlayer(section, songId) {
 
   // Seek to specific time position
   const seekTo = useCallback((targetTime) => {
-    const clamped = Math.max(0, Math.min(targetTime, duration));
+    const dur = durationRef.current || duration;
+    const clamped = Math.max(0, Math.min(targetTime, dur));
     const wasPlaying = isPlayingRef.current;
 
     if (wasPlaying) {
