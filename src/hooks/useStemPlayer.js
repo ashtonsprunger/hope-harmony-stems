@@ -2,8 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 
 // Default volume constants per requirements
 const DEFAULT_SELECTED_PART_VOLUME = 100;
-const DEFAULT_OTHER_HARMONIES_VOLUME = 15;
-const DEFAULT_BEAT_VOLUME = 10;
+const DEFAULT_OTHER_HARMONIES_VOLUME = 18;
+const DEFAULT_BEAT_VOLUME = 25;
 
 export function useStemPlayer(section, songId, allSections = []) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -68,12 +68,12 @@ export function useStemPlayer(section, songId, allSections = []) {
     });
   }, [songId, section]);
 
-  // Volumes (0 to 100): in-memory defaults (selected part: 100, other harmonies: 15, beat: 10)
+  // Volumes (0 to 100): in-memory defaults (selected part: 100, other harmonies: 18, beat: 25)
   // For unlinked / individual stems: { [stemId]: number }
   const [stemVolumes, setStemVolumes] = useState({});
-  // When a focus is selected, other harmony parts share this linked volume (default 15%)
+  // When a focus is selected, other harmony parts share this linked volume (default 18%)
   const [linkedHarmonyVolume, setLinkedHarmonyVolumeState] = useState(DEFAULT_OTHER_HARMONIES_VOLUME);
-  // Beat track volume (default 10%)
+  // Beat track volume (default 25%)
   const [beatVolume, setBeatVolumeState] = useState(DEFAULT_BEAT_VOLUME);
 
   // Mute states: { [stemId]: boolean, beat: boolean }

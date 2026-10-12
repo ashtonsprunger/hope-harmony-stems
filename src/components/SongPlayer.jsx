@@ -1,59 +1,30 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StickyNote } from 'lucide-react';
 import FocusSelector from './FocusSelector';
 import Mixer from './Mixer';
 import PlaybackBar from './PlaybackBar';
 import SheetMusicModal from './SheetMusicModal';
 import { useStemPlayer } from '../hooks/useStemPlayer';
+import { useMidiPlayer } from '../hooks/useMidiPlayer';
 
-export default function SongPlayer({
+/**
+ * Shared Player Workspace UI
+ */
+function SongPlayerWorkspace({
   song,
-  onBackToSongs,
+  activeSection,
+  activeSectionId,
+  onSelectSection,
+  player,
   isSheetOpen,
   onToggleSheet,
   onCloseSheet,
   onSheetZoomChange,
+  currentMeasure,
+  currentBeat,
+  timeSig,
+  totalMeasures,
 }) {
-  // Speed / section initial state: check localStorage or 1st in list
-  const [activeSectionId, setActiveSectionId] = useState(() => {
-    try {
-      const saved = localStorage.getItem(`hh_speed_${song.id}`);
-      if (saved && song.sections?.some((s) => s.id === saved)) {
-        return saved;
-      }
-    } catch (e) {
-      console.warn('Could not read saved speed from localStorage', e);
-    }
-    // Default is 1st in list always
-    return song.sections?.[0]?.id || '';
-  });
-
-  const handleSelectSection = (newSection) => {
-    setActiveSectionId(newSection.id);
-    try {
-      localStorage.setItem(`hh_speed_${song.id}`, newSection.id);
-    } catch (e) {
-      console.warn('Could not save speed to localStorage', e);
-    }
-  };
-
-  // Keep activeSectionId in sync if song changes
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem(`hh_speed_${song.id}`);
-      if (saved && song.sections?.some((s) => s.id === saved)) {
-        setActiveSectionId(saved);
-        return;
-      }
-    } catch (e) {}
-    setActiveSectionId(song.sections?.[0]?.id || '');
-  }, [song.id]);
-
-  const activeSection =
-    song.sections?.find((s) => s.id === activeSectionId) || song.sections?.[0];
-
-  const player = useStemPlayer(activeSection, song.id, song.sections);
-
   // Support string or array format for sheetMusic / pdf
   const rawSheetMusic = song.sheetMusic || song.pdf;
   const sheetMusicList = Array.isArray(rawSheetMusic)
@@ -81,7 +52,7 @@ export default function SongPlayer({
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 pb-48 sm:pb-52">
-      {/* Main Workspace Controls (Always accessible when modal closed) */}
+      {/* Main Workspace Controls */}
       <div className="space-y-6">
         {/* Selectors Row: Part Focus */}
         {activeSection?.stems && (
@@ -95,7 +66,7 @@ export default function SongPlayer({
           </div>
         )}
 
-        {/* 3. Stem Mixer */}
+        {/* Stem Mixer */}
         <Mixer
           section={activeSection}
           focusPart={player.focusPart}
@@ -109,7 +80,7 @@ export default function SongPlayer({
           onToggleMute={player.toggleMute}
         />
 
-        {/* 4. Song Notes Card (Warm Rehearsal Callout) */}
+        {/* Song Notes Card */}
         {hasNotes && (
           <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800/40 shadow-sm transition-colors">
             <div className="flex items-center gap-2 mb-2 text-amber-900 dark:text-amber-300">
@@ -135,7 +106,7 @@ export default function SongPlayer({
         )}
       </div>
 
-      {/* 📄 Full-Width Non-Scrolling Sheet Music Modal */}
+      {/* Sheet Music Modal */}
       {hasSheetMusic && (
         <SheetMusicModal
           isOpen={isSheetOpen}
@@ -148,7 +119,7 @@ export default function SongPlayer({
         />
       )}
 
-      {/* 4. Sticky Bottom Playback Bar (Always Visible + Built-in Page Turn Dock) */}
+      {/* Sticky Bottom Playback Bar */}
       <PlaybackBar
         isPlaying={player.isPlaying}
         currentTime={player.currentTime}
@@ -169,9 +140,187 @@ export default function SongPlayer({
         // Speed / section selector
         sections={song.sections}
         activeSectionId={activeSectionId}
-        onSelectSection={handleSelectSection}
+        onSelectSection={onSelectSection}
         speedLabel={song.tempoLabel || song.sectionLabel || song.versionLabel || 'Speed:'}
+        // Live Measure & Beat indicator
+        currentMeasure={currentMeasure}
+        currentBeat={currentBeat}
+        timeSig={timeSig}
+        totalMeasures={totalMeasures}
       />
     </div>
   );
+}
+
+/**
+ * Audio Stem Player (untouched audio stems implementation)
+ */
+function StemSongPlayer({
+  song,
+  isSheetOpen,
+  onToggleSheet,
+  onCloseSheet,
+  onSheetZoomChange,
+}) {
+  const [activeSectionId, setActiveSectionId] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`hh_speed_${song.id}`);
+      if (saved && song.sections?.some((s) => s.id === saved)) {
+        return saved;
+      }
+    } catch (e) {
+      console.warn('Could not read saved speed from localStorage', e);
+    }
+    return song.sections?.[0]?.id || '';
+  });
+
+  const handleSelectSection = (newSection) => {
+    setActiveSectionId(newSection.id);
+    try {
+      localStorage.setItem(`hh_speed_${song.id}`, newSection.id);
+    } catch (e) {
+      console.warn('Could not save speed to localStorage', e);
+    }
+  };
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`hh_speed_${song.id}`);
+      if (saved && song.sections?.some((s) => s.id === saved)) {
+        setActiveSectionId(saved);
+        return;
+      }
+    } catch (e) {}
+    setActiveSectionId(song.sections?.[0]?.id || '');
+  }, [song.id]);
+
+  const activeSection =
+    song.sections?.find((s) => s.id === activeSectionId) || song.sections?.[0];
+
+  const player = useStemPlayer(activeSection, song.id, song.sections);
+
+  return (
+    <SongPlayerWorkspace
+      song={song}
+      activeSection={activeSection}
+      activeSectionId={activeSectionId}
+      onSelectSection={handleSelectSection}
+      player={player}
+      isSheetOpen={isSheetOpen}
+      onToggleSheet={onToggleSheet}
+      onCloseSheet={onCloseSheet}
+      onSheetZoomChange={onSheetZoomChange}
+    />
+  );
+}
+
+/**
+ * MIDI Synthesizer Player (with FluidR3 Tack Piano, Woodblock, proportional speed scaling, and live measure/beat tracking)
+ */
+function MidiSongPlayer({
+  song,
+  isSheetOpen,
+  onToggleSheet,
+  onCloseSheet,
+  onSheetZoomChange,
+}) {
+  const defaultStems = React.useMemo(() => {
+    return song.stems || [
+      { id: 'soprano', name: 'Soprano' },
+      { id: 'alto', name: 'Alto' },
+      { id: 'tenor', name: 'Tenor' },
+      { id: 'bass', name: 'Bass' },
+    ];
+  }, [song.stems]);
+
+  // Derive allowed speed options: from simple array `song.speeds` e.g. [1, 0.9, 0.8, 0.7, 0.6] or song.sections
+  const speedOptions = React.useMemo(() => {
+    if (Array.isArray(song.speeds) && song.speeds.length > 0) {
+      return song.speeds.map((s) => {
+        const num = typeof s === 'number' ? s : parseFloat(s);
+        return {
+          id: String(num),
+          name: `${num}x`,
+          speed: num,
+          beat: 'beat',
+          stems: defaultStems,
+        };
+      });
+    }
+    if (Array.isArray(song.sections) && song.sections.length > 0) {
+      return song.sections;
+    }
+    // Default fallback speeds if not specified
+    return [1, 0.9, 0.8, 0.7, 0.6].map((num) => ({
+      id: String(num),
+      name: `${num}x`,
+      speed: num,
+      beat: 'beat',
+      stems: defaultStems,
+    }));
+  }, [song.speeds, song.sections, defaultStems]);
+
+  const [activeSectionId, setActiveSectionId] = useState(() => {
+    try {
+      const saved = localStorage.getItem(`hh_speed_${song.id}`);
+      if (saved && speedOptions.some((s) => s.id === saved)) {
+        return saved;
+      }
+    } catch (e) {}
+    return speedOptions[0]?.id || '1';
+  });
+
+  const handleSelectSection = (newSection) => {
+    setActiveSectionId(newSection.id);
+    try {
+      localStorage.setItem(`hh_speed_${song.id}`, newSection.id);
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(`hh_speed_${song.id}`);
+      if (saved && speedOptions.some((s) => s.id === saved)) {
+        setActiveSectionId(saved);
+        return;
+      }
+    } catch (e) {}
+    setActiveSectionId(speedOptions[0]?.id || '1');
+  }, [song.id, speedOptions]);
+
+  const activeSection =
+    speedOptions.find((s) => s.id === activeSectionId) || speedOptions[0];
+
+  const speed = activeSection?.speed !== undefined ? Number(activeSection.speed) : 1.0;
+
+  const player = useMidiPlayer(activeSection, song.id, song.midiFile, speed);
+
+  return (
+    <SongPlayerWorkspace
+      song={{ ...song, sections: speedOptions }}
+      activeSection={activeSection}
+      activeSectionId={activeSectionId}
+      onSelectSection={handleSelectSection}
+      player={player}
+      isSheetOpen={isSheetOpen}
+      onToggleSheet={onToggleSheet}
+      onCloseSheet={onCloseSheet}
+      onSheetZoomChange={onSheetZoomChange}
+      currentMeasure={player.currentMeasure}
+      currentBeat={player.currentBeat}
+      timeSig={player.currentTimeSig}
+      totalMeasures={player.totalMeasures}
+    />
+  );
+}
+
+/**
+ * Main SongPlayer component: delegates cleanly based on song.type or song.midiFile
+ */
+export default function SongPlayer(props) {
+  const isMidi = props.song?.type === 'midi' || Boolean(props.song?.midiFile);
+  if (isMidi) {
+    return <MidiSongPlayer {...props} />;
+  }
+  return <StemSongPlayer {...props} />;
 }

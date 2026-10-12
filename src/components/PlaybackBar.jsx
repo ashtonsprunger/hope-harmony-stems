@@ -30,6 +30,11 @@ export default function PlaybackBar({
   activeSectionId = '',
   onSelectSection,
   speedLabel = 'Speed:',
+  // Live Measure & Beat indicator
+  currentMeasure,
+  currentBeat,
+  timeSig,
+  totalMeasures,
 }) {
   const playbackBarRef = useRef(null);
 
@@ -117,8 +122,10 @@ export default function PlaybackBar({
 
         {/* Timeline Scrubber */}
         <div className="flex items-center gap-3 sm:gap-4 mb-2.5 sm:mb-3">
-          <span className="text-xs sm:text-sm font-mono font-bold text-slate-500 dark:text-slate-400 w-11 sm:w-12 text-right">
-            {formatTime(currentTime)}
+          <span className="text-xs sm:text-sm font-mono font-bold text-slate-500 dark:text-slate-400 min-w-[3.5rem] sm:min-w-[4.25rem] text-right shrink-0">
+            {currentMeasure !== undefined && currentMeasure !== null
+              ? `${currentMeasure}.${currentBeat || 1}`
+              : formatTime(currentTime)}
           </span>
 
           <div className="flex-1 relative flex items-center py-2">
@@ -137,60 +144,82 @@ export default function PlaybackBar({
             />
           </div>
 
-          <span className="text-xs sm:text-sm font-mono font-bold text-slate-500 dark:text-slate-400 w-11 sm:w-12 text-left">
-            {formatTime(duration)}
+          <span className="text-xs sm:text-sm font-mono font-bold text-slate-500 dark:text-slate-400 min-w-[3.5rem] sm:min-w-[4.25rem] text-left shrink-0">
+            {currentMeasure !== undefined && currentMeasure !== null
+              ? `${totalMeasures || 99}`
+              : formatTime(duration)}
           </span>
         </div>
 
         {/* Transport Controls - Centered with Speed button on left and Sheet button on right */}
         <div className="relative flex items-center justify-center">
           {/* Speed / Version Button - Positioned in Bottom Left (when multiple speeds exist) */}
-          {sections && sections.length > 1 && (
-            <div ref={speedMenuRef} className="absolute left-0 top-1/2 -translate-y-1/2">
-              {isSpeedMenuOpen && (
-                <div className="absolute left-0 bottom-full mb-3 min-w-[150px] sm:min-w-[170px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 shadow-xl shadow-slate-900/10 dark:shadow-black/50 z-50 animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {speedLabel.replace(':', '')}
-                  </div>
-                  <div className="space-y-0.5">
-                    {sections.map((sec) => {
-                      const isSelected = sec.id === activeSectionId;
-                      return (
-                        <button
-                          key={sec.id}
-                          onClick={() => {
-                            if (onSelectSection) onSelectSection(sec);
-                            setIsSpeedMenuOpen(false);
-                          }}
-                          className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition active:scale-[0.98] ${
-                            isSelected
-                              ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400'
-                              : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                          }`}
-                        >
-                          <span className="truncate">{sec.name}</span>
-                          {isSelected && <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+          {sections && sections.length > 1 && (() => {
+            const currentSection = sections.find((s) => s.id === activeSectionId) || sections[0];
+            let speedButtonLabel = '1x';
+            if (currentSection) {
+              if (currentSection.speed !== undefined) {
+                speedButtonLabel = `${currentSection.speed}x`;
+              } else if (currentSection.name) {
+                const match = currentSection.name.match(/\b(\d+(\.\d+)?)x?\b/);
+                if (match) {
+                  speedButtonLabel = `${match[1]}x`;
+                } else {
+                  speedButtonLabel = currentSection.name.length > 5 ? currentSection.name.slice(0, 4) : currentSection.name;
+                }
+              }
+            }
 
-              <button
-                onClick={() => setIsSpeedMenuOpen((prev) => !prev)}
-                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center border transition active:scale-95 shadow-sm ${
-                  isSpeedMenuOpen
-                    ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-blue-600/25 ring-2 ring-blue-500/30'
-                    : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white border-slate-200 dark:border-slate-700'
-                }`}
-                title={`${speedLabel.replace(':', '')}: ${sections.find((s) => s.id === activeSectionId)?.name || ''}`}
-                aria-label={`Select ${speedLabel.replace(':', '').toLowerCase()}`}
-              >
-                <Gauge className={`w-5 h-5 sm:w-5.5 sm:h-5.5 ${isSpeedMenuOpen ? 'text-white' : 'text-blue-600 dark:text-blue-400'}`} />
-              </button>
-            </div>
-          )}
+            return (
+              <div ref={speedMenuRef} className="absolute left-0 top-1/2 -translate-y-1/2">
+                {isSpeedMenuOpen && (
+                  <div className="absolute left-0 bottom-full mb-3 min-w-[150px] sm:min-w-[170px] bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border border-slate-200 dark:border-slate-800 rounded-2xl p-1.5 shadow-xl shadow-slate-900/10 dark:shadow-black/50 z-50 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                      {speedLabel.replace(':', '')}
+                    </div>
+                    <div className="space-y-0.5">
+                      {sections.map((sec) => {
+                        const isSelected = sec.id === activeSectionId;
+                        const displayName = sec.speed !== undefined ? `${sec.speed}x` : sec.name;
+                        return (
+                          <button
+                            key={sec.id}
+                            onClick={() => {
+                              if (onSelectSection) onSelectSection(sec);
+                              setIsSpeedMenuOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between gap-3 px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold transition active:scale-[0.98] ${
+                              isSelected
+                                ? 'bg-blue-50 text-blue-600 dark:bg-blue-500/15 dark:text-blue-400'
+                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                            }`}
+                          >
+                            <span className="truncate">{displayName}</span>
+                            {isSelected && <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <button
+                  onClick={() => setIsSpeedMenuOpen((prev) => !prev)}
+                  className={`h-11 sm:h-12 px-2.5 sm:px-3 min-w-[2.75rem] sm:min-w-[3.25rem] rounded-2xl flex items-center justify-center border transition active:scale-95 shadow-sm font-mono font-bold text-xs sm:text-sm ${
+                    isSpeedMenuOpen
+                      ? 'bg-blue-600 hover:bg-blue-500 text-white border-blue-500 shadow-blue-600/25 ring-2 ring-blue-500/30'
+                      : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-950 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-200 dark:hover:text-white border-slate-200 dark:border-slate-700'
+                  }`}
+                  title={`${speedLabel.replace(':', '')}: ${currentSection?.name || speedButtonLabel}`}
+                  aria-label={`Select ${speedLabel.replace(':', '').toLowerCase()}`}
+                >
+                  <span className={isSpeedMenuOpen ? 'text-white' : 'text-blue-600 dark:text-blue-400'}>
+                    {speedButtonLabel}
+                  </span>
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Centered Controls */}
           <div className="flex items-center justify-center gap-3 sm:gap-5">
