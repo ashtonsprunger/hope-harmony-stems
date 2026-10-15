@@ -71,7 +71,7 @@
   {
     "id": "12-days-midi",
     "title": "Test...",
-    "hidden": false,
+    "hidden": true,
     "type": "midi",
     "artist": "Traditional / Richard Gregory",
     "sheetMusic": "/songs/12-days/12-days.pdf",
