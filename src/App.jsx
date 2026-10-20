@@ -88,7 +88,7 @@ export default function App() {
       }
       if (songsRef.current.length > 0) {
         const matched = songsRef.current.find((s) => s.id === hash);
-        if (matched) {
+        if (matched && matched.type !== 'link' && !matched.url) {
           setSelectedSong(matched);
         } else {
           setSelectedSong(null);
@@ -138,7 +138,7 @@ export default function App() {
         const hash = window.location.hash.replace('#', '');
         if (hash) {
           const matched = data.find((s) => s.id === hash);
-          if (matched) {
+          if (matched && matched.type !== 'link' && !matched.url) {
             setSelectedSong(matched);
           }
         }
@@ -155,6 +155,10 @@ export default function App() {
 
   // Handle song selection
   const handleSelectSong = (song) => {
+    if (song.type === 'link' || song.url) {
+      window.open(song.url, '_blank', 'noopener,noreferrer');
+      return;
+    }
     setSelectedSong(song);
     try {
       window.history.pushState({ appPage: 'song', songId: song.id }, '', '#' + song.id);
