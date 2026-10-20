@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { parseMidi } from '../audio/midiParser';
 import { ensureSoundfontLoaded } from '../audio/soundfontLoader';
+import { registerAudioContextForUnlock, unlockAudioContext } from '../audio/iosAudioUnlock';
 
 // Default volume constants matching useStemPlayer
 const DEFAULT_SELECTED_PART_VOLUME = 100;
@@ -161,6 +162,9 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
       // Smooth anti-click gain ramp
       try {
         gNode.gain.cancelScheduledValues(audioCtx.currentTime);
+        if (audioCtx.state !== 'running') {
+          gNode.gain.value = targetGain;
+        }
         gNode.gain.setTargetAtTime(targetGain, audioCtx.currentTime, 0.015);
       } catch (e) {
         gNode.gain.value = targetGain;
@@ -179,6 +183,7 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
       const AudioCtxClass = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioCtxClass();
       audioCtxRef.current = ctx;
+      registerAudioContextForUnlock(ctx);
 
       // Master Gain (headroom 0.50)
       const master = ctx.createGain();
@@ -590,10 +595,9 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
         animationFrameIdRef.current = null;
       }
     } else {
-      // Resume AudioContext if suspended by browser
-      if (audioCtx.state === 'suspended') {
-        await audioCtx.resume();
-      }
+      // Unlock iOS Silent Mode switch & resume AudioContext if suspended/interrupted
+      await unlockAudioContext(audioCtx);
+      applyGains();
 
       // If at end of song, restart from beginning
       if (currentTimeRef.current >= durationRef.current - 0.2) {
@@ -661,7 +665,7 @@ export function useMidiPlayer(section, songId, midiUrl, speed = 1.0) {
 
       animationFrameIdRef.current = requestAnimationFrame(onFrame);
     }
-  }, [scheduleLookahead, seekTo, resetScheduledIndices]);
+  }, [scheduleLookahead, seekTo, resetScheduledIndices, applyGains]);
 
   // Clean up on unmount
   useEffect(() => {

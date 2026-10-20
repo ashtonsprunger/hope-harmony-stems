@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { registerAudioContextForUnlock, unlockAudioContext } from '../audio/iosAudioUnlock';
 
 // Default volume constants per requirements
 const DEFAULT_SELECTED_PART_VOLUME = 100;
@@ -128,23 +129,23 @@ export function useStemPlayer(section, songId, allSections = []) {
   const startPlaybackRef = useRef(null);
   const lastUiUpdateRef = useRef(0);
   const preloadTimerRef = useRef(null);
+  const playRequestIdRef = useRef(0);
 
   useEffect(() => {
     durationRef.current = duration;
   }, [duration]);
 
-  // Initialize or resume AudioContext
+  // Initialize or return AudioContext
   const getAudioContext = useCallback(() => {
     if (!audioCtxRef.current) {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       const ctx = new AudioCtx();
       const masterGain = ctx.createGain();
+      masterGain.gain.value = 1.0;
       masterGain.connect(ctx.destination);
       audioCtxRef.current = ctx;
       masterGainRef.current = masterGain;
-    }
-    if (audioCtxRef.current.state === 'suspended') {
-      audioCtxRef.current.resume();
+      registerAudioContextForUnlock(ctx);
     }
     return audioCtxRef.current;
   }, []);
@@ -173,11 +174,20 @@ export function useStemPlayer(section, songId, allSections = []) {
       }
     }
 
-    if (immediate) {
-      gainNode.gain.cancelScheduledValues(now);
-      gainNode.gain.setValueAtTime(targetGain, now);
+    if (immediate || ctx.state !== 'running') {
+      try {
+        gainNode.gain.cancelScheduledValues(now);
+        gainNode.gain.value = targetGain;
+        gainNode.gain.setValueAtTime(targetGain, now);
+      } catch (e) {
+        gainNode.gain.value = targetGain;
+      }
     } else {
-      gainNode.gain.setTargetAtTime(targetGain, now, 0.02);
+      try {
+        gainNode.gain.setTargetAtTime(targetGain, now, 0.02);
+      } catch (e) {
+        gainNode.gain.value = targetGain;
+      }
     }
   }, []);
 
@@ -232,6 +242,7 @@ export function useStemPlayer(section, songId, allSections = []) {
     }
 
     // Stop and cleanup previous sources and nodes
+    playRequestIdRef.current++;
     Object.values(sourceNodesRef.current).forEach((source) => {
       try { source.stop(); } catch (e) { /* ignore */ }
     });
@@ -414,6 +425,7 @@ export function useStemPlayer(section, songId, allSections = []) {
 
     return () => {
       isCancelled = true;
+      playRequestIdRef.current++;
       if (preloadTimerRef.current) {
         clearTimeout(preloadTimerRef.current);
         preloadTimerRef.current = null;
@@ -466,7 +478,12 @@ export function useStemPlayer(section, songId, allSections = []) {
 
   // Start all stems at the exact same microsecond
   const startPlayback = useCallback((offset = 0, explicitDuration = null) => {
+    const requestId = ++playRequestIdRef.current;
     const ctx = getAudioContext();
+
+    // Synchronously unlock iOS audio session & resume AudioContext inside the user gesture
+    const unlockPromise = unlockAudioContext(ctx);
+
     if (Object.keys(buffersRef.current).length === 0) return;
 
     // Stop any existing sources
@@ -475,41 +492,64 @@ export function useStemPlayer(section, songId, allSections = []) {
     });
     sourceNodesRef.current = {};
 
-    // Re-verify gains before scheduling playback
-    Object.entries(gainNodesRef.current).forEach(([id, node]) => {
-      applyGainToNode(id, node, true);
-    });
-
-    // Schedule slightly in future for sample-accurate simultaneous trigger (+60ms for mobile safety)
-    const startTime = ctx.currentTime + 0.06;
     const dur = explicitDuration || durationRef.current || duration;
     const clampedOffset = Math.max(0, Math.min(offset, dur > 0.05 ? dur - 0.05 : 0));
 
-    Object.entries(buffersRef.current).forEach(([id, buffer]) => {
-      if (clampedOffset >= buffer.duration) return;
+    const scheduleAndStartSources = () => {
+      if (requestId !== playRequestIdRef.current) return;
+      if (Object.keys(buffersRef.current).length === 0) return;
 
-      const source = ctx.createBufferSource();
-      source.buffer = buffer;
+      // Stop any sources that might have been created in between
+      Object.values(sourceNodesRef.current).forEach((source) => {
+        try { source.stop(); } catch (e) { /* ignore */ }
+      });
+      sourceNodesRef.current = {};
 
-      const gainNode = gainNodesRef.current[id];
-      if (gainNode) {
-        source.connect(gainNode);
-      } else {
-        source.connect(masterGainRef.current);
-      }
+      // Re-verify gains right when AudioContext is running
+      Object.entries(gainNodesRef.current).forEach(([id, node]) => {
+        applyGainToNode(id, node, true);
+      });
 
-      source.start(startTime, clampedOffset);
-      sourceNodesRef.current[id] = source;
-    });
+      // Schedule slightly in future for sample-accurate simultaneous trigger (+60ms for mobile safety)
+      const startTime = ctx.currentTime + 0.06;
 
-    playStartTimeRef.current = startTime;
-    offsetAtStartRef.current = clampedOffset;
-    isPlayingRef.current = true;
-    setIsPlaying(true);
-    lastUiUpdateRef.current = 0; // Trigger immediate first frame update
+      Object.entries(buffersRef.current).forEach(([id, buffer]) => {
+        if (clampedOffset >= buffer.duration) return;
 
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    animFrameRef.current = requestAnimationFrame(updateProgress);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+
+        const gainNode = gainNodesRef.current[id];
+        if (gainNode) {
+          source.connect(gainNode);
+        } else {
+          source.connect(masterGainRef.current);
+        }
+
+        source.start(startTime, clampedOffset);
+        sourceNodesRef.current[id] = source;
+      });
+
+      playStartTimeRef.current = startTime;
+      offsetAtStartRef.current = clampedOffset;
+      isPlayingRef.current = true;
+      setIsPlaying(true);
+      lastUiUpdateRef.current = 0; // Trigger immediate first frame update
+
+      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = requestAnimationFrame(updateProgress);
+    };
+
+    if (ctx.state === 'running') {
+      scheduleAndStartSources();
+    } else {
+      // Provide immediate Play/Pause UI feedback while iOS wakes up the AudioContext
+      offsetAtStartRef.current = clampedOffset;
+      playStartTimeRef.current = ctx.currentTime;
+      isPlayingRef.current = true;
+      setIsPlaying(true);
+      unlockPromise.then(scheduleAndStartSources);
+    }
   }, [getAudioContext, duration, updateProgress, applyGainToNode]);
 
   // Keep startPlaybackRef up to date for async speed-switching callback
@@ -519,13 +559,15 @@ export function useStemPlayer(section, songId, allSections = []) {
 
   // Stop playback cleanly
   const stopPlayback = useCallback(() => {
+    playRequestIdRef.current++;
+
     Object.values(sourceNodesRef.current).forEach((source) => {
       try { source.stop(); } catch (e) { /* ignore */ }
     });
     sourceNodesRef.current = {};
 
     if (isPlayingRef.current && audioCtxRef.current) {
-      const elapsed = audioCtxRef.current.currentTime - playStartTimeRef.current;
+      const elapsed = Math.max(0, audioCtxRef.current.currentTime - playStartTimeRef.current);
       const dur = durationRef.current || duration;
       offsetAtStartRef.current = Math.min(dur, Math.max(0, offsetAtStartRef.current + elapsed));
       setCurrentTime(offsetAtStartRef.current);

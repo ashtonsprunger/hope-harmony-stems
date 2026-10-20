@@ -2,6 +2,10 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './index.css';
+import { ensureGlobalUnlockListeners } from './audio/iosAudioUnlock';
+
+// Proactively unlock iOS audio session on first user touch anywhere in the app
+ensureGlobalUnlockListeners();
 
 // Register PWA service worker
 if ('serviceWorker' in navigator) {
