@@ -88,6 +88,46 @@
     ]
   },
   {
+    "id": "o-come-o-come-emmanuel",
+    "title": "O Come, O Come, Emmanuel",
+    "hidden": false,
+    "notes": [],
+    "artist": "Traditional / Thomas Helmore",
+    "tempoLabel": "Speed:",
+    "partLabel": "Part:",
+    "sheetMusic": "/songs/o-come-o-come-emmanuel/o-come-o-come-emmanuel.pdf",
+    "key": "",
+    "sections": [
+      {
+        "id": "full-tempo",
+        "name": "Full Speed",
+        "beat": "/songs/o-come-o-come-emmanuel/normal/beat.mp3",
+        "stems": [
+          {
+            "id": "soprano",
+            "name": "Soprano",
+            "file": "/songs/o-come-o-come-emmanuel/normal/soprano.mp3"
+          },
+          {
+            "id": "alto",
+            "name": "Alto",
+            "file": "/songs/o-come-o-come-emmanuel/normal/alto.mp3"
+          },
+          {
+            "id": "tenor",
+            "name": "Tenor",
+            "file": "/songs/o-come-o-come-emmanuel/normal/tenor.mp3"
+          },
+          {
+            "id": "bass",
+            "name": "Bass",
+            "file": "/songs/o-come-o-come-emmanuel/normal/bass.mp3"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "type": "link",
     "name": "Is He Worthy",
     "url": "https://drive.google.com/drive/folders/1QtAverSbaC0yge4xwE6Nun7Ew-8hPQ5G"

@@ -61,6 +61,10 @@ export default function SheetMusicModal({
 
   // Load PDF document
   useEffect(() => {
+    isDraggingRef.current = false;
+    hasMovedRef.current = false;
+    setIsDragging(false);
+
     if (!isOpen || !pdfUrl) return;
 
     let isCancelled = false;
@@ -202,51 +206,54 @@ export default function SheetMusicModal({
   // Tap to cycle zoom: 1x -> 1.6x -> 2.4x -> 1x
   // When zooming in, immediately snap to the top of the score
   const handleTap = () => {
-    if (hasMovedRef.current) return;
+    if (hasMovedRef.current) {
+      hasMovedRef.current = false;
+      return;
+    }
 
-    setZoomIndex((prev) => {
-      const next = (prev + 1) % ZOOM_LEVELS.length;
-      if (next === 0) {
-        setPan({ x: 0, y: 0 });
-      } else {
-        const nextScale = ZOOM_LEVELS[next];
-        const { topPanY } = getBounds(nextScale);
-        setPan({ x: 0, y: topPanY });
-      }
-      onZoomChange?.(next > 0);
-      return next;
-    });
+    const next = (zoomIndex + 1) % ZOOM_LEVELS.length;
+    setZoomIndex(next);
+    if (next === 0) {
+      setPan({ x: 0, y: 0 });
+    } else {
+      const nextScale = ZOOM_LEVELS[next];
+      const { topPanY } = getBounds(nextScale);
+      setPan({ x: 0, y: topPanY });
+    }
+    onZoomChange?.(next > 0);
   };
 
   // Drag to pan when zoomed
   const handlePointerDown = (clientX, clientY) => {
-    if (zoomIndex === 0) return;
+    hasMovedRef.current = false;
+    if (zoomIndex === 0) {
+      isDraggingRef.current = false;
+      return;
+    }
     isDraggingRef.current = true;
     setIsDragging(true);
-    hasMovedRef.current = false;
     dragStartRef.current = { x: clientX, y: clientY };
     panStartRef.current = { ...pan };
   };
 
   const handlePointerMove = (clientX, clientY) => {
-    if (!isDraggingRef.current) return;
+    if (!isDraggingRef.current || zoomIndex === 0) return;
 
     const dx = clientX - dragStartRef.current.x;
     const dy = clientY - dragStartRef.current.y;
 
-    if (Math.abs(dx) > 6 || Math.abs(dy) > 6) {
+    if (!hasMovedRef.current) {
+      if (Math.hypot(dx, dy) <= 10) return;
       hasMovedRef.current = true;
     }
 
-    if (zoomIndex > 0) {
-      const currentScale = ZOOM_LEVELS[zoomIndex];
-      const { maxPanX, maxPanY } = getBounds(currentScale);
+    const currentScale = ZOOM_LEVELS[zoomIndex];
+    const { maxPanX, maxPanY } = getBounds(currentScale);
 
-      const newX = Math.max(-maxPanX, Math.min(maxPanX, panStartRef.current.x + dx));
-      const newY = Math.max(-maxPanY, Math.min(maxPanY, panStartRef.current.y + dy));
+    const newX = Math.max(-maxPanX, Math.min(maxPanX, panStartRef.current.x + dx));
+    const newY = Math.max(-maxPanY, Math.min(maxPanY, panStartRef.current.y + dy));
 
-      setPan({ x: newX, y: newY });
-    }
+    setPan({ x: newX, y: newY });
   };
 
   const handlePointerUp = () => {
@@ -298,6 +305,7 @@ export default function SheetMusicModal({
         onMouseDown={(e) => handlePointerDown(e.clientX, e.clientY)}
         onMouseMove={(e) => handlePointerMove(e.clientX, e.clientY)}
         onMouseUp={handlePointerUp}
+        onMouseLeave={handlePointerUp}
         onTouchStart={(e) => {
           if (e.touches[0]) handlePointerDown(e.touches[0].clientX, e.touches[0].clientY);
         }}
@@ -305,6 +313,7 @@ export default function SheetMusicModal({
           if (e.touches[0]) handlePointerMove(e.touches[0].clientX, e.touches[0].clientY);
         }}
         onTouchEnd={handlePointerUp}
+        onTouchCancel={handlePointerUp}
         onClick={handleTap}
       >
         {isLoading ? (
