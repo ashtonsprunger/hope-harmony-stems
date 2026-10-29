@@ -76,6 +76,8 @@ function SongPlayerWorkspace({
           onLinkedHarmonyVolumeChange={player.setLinkedHarmonyVolume}
           beatVolume={player.beatVolume}
           onBeatVolumeChange={player.setBeatVolume}
+          pianoVolume={player.pianoVolume}
+          onPianoVolumeChange={player.setPianoVolume}
           mutedStates={player.mutedStates}
           onToggleMute={player.toggleMute}
         />

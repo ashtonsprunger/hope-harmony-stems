@@ -5,6 +5,7 @@ import { registerAudioContextForUnlock, unlockAudioContext } from '../audio/iosA
 const DEFAULT_SELECTED_PART_VOLUME = 100;
 const DEFAULT_OTHER_HARMONIES_VOLUME = 18;
 const DEFAULT_BEAT_VOLUME = 25;
+const DEFAULT_PIANO_VOLUME = 10;
 
 function isMobileDevice() {
   if (typeof navigator === 'undefined') return false;
@@ -85,8 +86,10 @@ export function useStemPlayer(section, songId, allSections = []) {
   const [linkedHarmonyVolume, setLinkedHarmonyVolumeState] = useState(DEFAULT_OTHER_HARMONIES_VOLUME);
   // Beat track volume (default 25%)
   const [beatVolume, setBeatVolumeState] = useState(DEFAULT_BEAT_VOLUME);
+  // Piano track volume
+  const [pianoVolume, setPianoVolumeState] = useState(DEFAULT_PIANO_VOLUME);
 
-  // Mute states: { [stemId]: boolean, beat: boolean }
+  // Mute states: { [stemId]: boolean, beat: boolean, piano: boolean }
   const [mutedStates, setMutedStates] = useState({});
 
   // Reset cache, volumes, and mutes to standard defaults whenever songId changes
@@ -95,6 +98,7 @@ export function useStemPlayer(section, songId, allSections = []) {
     setStemVolumes({});
     setLinkedHarmonyVolumeState(DEFAULT_OTHER_HARMONIES_VOLUME);
     setBeatVolumeState(DEFAULT_BEAT_VOLUME);
+    setPianoVolumeState(DEFAULT_PIANO_VOLUME);
     setMutedStates({});
   }, [songId]);
 
@@ -103,12 +107,14 @@ export function useStemPlayer(section, songId, allSections = []) {
   const stemVolumesRef = useRef(stemVolumes);
   const linkedHarmonyVolumeRef = useRef(linkedHarmonyVolume);
   const beatVolumeRef = useRef(beatVolume);
+  const pianoVolumeRef = useRef(pianoVolume);
   const mutedStatesRef = useRef(mutedStates);
 
   useEffect(() => { focusPartRef.current = focusPart; }, [focusPart]);
   useEffect(() => { stemVolumesRef.current = stemVolumes; }, [stemVolumes]);
   useEffect(() => { linkedHarmonyVolumeRef.current = linkedHarmonyVolume; }, [linkedHarmonyVolume]);
   useEffect(() => { beatVolumeRef.current = beatVolume; }, [beatVolume]);
+  useEffect(() => { pianoVolumeRef.current = pianoVolume; }, [pianoVolume]);
   useEffect(() => { mutedStatesRef.current = mutedStates; }, [mutedStates]);
 
   // Audio Context & Web Audio Nodes
@@ -155,7 +161,11 @@ export function useStemPlayer(section, songId, allSections = []) {
     if (!gainNode || !audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
     const now = ctx.currentTime;
-    const isOtherHarmony = focusPartRef.current !== 'none' && trackId !== 'beat' && trackId !== focusPartRef.current;
+    const isOtherHarmony =
+      focusPartRef.current !== 'none' &&
+      trackId !== 'beat' &&
+      trackId !== 'piano' &&
+      trackId !== focusPartRef.current;
     const isMuted = !!mutedStatesRef.current[trackId] || (isOtherHarmony && !!mutedStatesRef.current['harmonies']);
 
     let targetGain = 0;
@@ -163,6 +173,8 @@ export function useStemPlayer(section, songId, allSections = []) {
       if (trackId === 'beat') {
         // Capped so 100% on slider = 25% audio gain for fine control
         targetGain = (beatVolumeRef.current / 100) * 0.25;
+      } else if (trackId === 'piano') {
+        targetGain = pianoVolumeRef.current / 100;
       } else if (focusPartRef.current === 'none') {
         const vol = stemVolumesRef.current[trackId] ?? 100;
         targetGain = vol / 100;
@@ -208,6 +220,7 @@ export function useStemPlayer(section, songId, allSections = []) {
     setMutedStates((prev) => {
       const updated = { ...prev };
       if (updated['beat'] === undefined) updated['beat'] = false;
+      if (updated['piano'] === undefined) updated['piano'] = false;
       if (updated['harmonies'] === undefined) updated['harmonies'] = false;
       section.stems?.forEach((stem) => {
         if (updated[stem.id] === undefined) updated[stem.id] = false;
@@ -303,6 +316,7 @@ export function useStemPlayer(section, songId, allSections = []) {
             const tracks = [
               ...(altSection.stems || []).map((s) => ({ id: s.id, file: s.file })),
               ...(altSection.beat ? [{ id: 'beat', file: altSection.beat }] : []),
+              ...(altSection.piano ? [{ id: 'piano', file: altSection.piano }] : []),
             ];
             const altBuffers = {};
             let altDuration = 0;
@@ -359,6 +373,7 @@ export function useStemPlayer(section, songId, allSections = []) {
     const tracksToLoad = [
       ...(section.stems || []).map((s) => ({ id: s.id, file: s.file })),
       ...(section.beat ? [{ id: 'beat', file: section.beat }] : []),
+      ...(section.piano ? [{ id: 'piano', file: section.piano }] : []),
     ];
 
     async function loadTracks() {
@@ -443,7 +458,7 @@ export function useStemPlayer(section, songId, allSections = []) {
     Object.entries(gainNodesRef.current).forEach(([id, node]) => {
       applyGainToNode(id, node, false);
     });
-  }, [section, focusPart, stemVolumes, linkedHarmonyVolume, beatVolume, mutedStates, applyGainToNode]);
+  }, [section, focusPart, stemVolumes, linkedHarmonyVolume, beatVolume, pianoVolume, mutedStates, applyGainToNode]);
 
   // Animation frame loop to keep currentTime synced with audio clock (throttled to ~20 FPS)
   const updateProgress = useCallback(() => {
@@ -629,6 +644,10 @@ export function useStemPlayer(section, songId, allSections = []) {
     setBeatVolumeState(volume);
   }, []);
 
+  const setPianoVolume = useCallback((volume) => {
+    setPianoVolumeState(volume);
+  }, []);
+
   const toggleMute = useCallback((id) => {
     setMutedStates((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
@@ -647,6 +666,8 @@ export function useStemPlayer(section, songId, allSections = []) {
     setLinkedHarmonyVolume,
     beatVolume,
     setBeatVolume,
+    pianoVolume,
+    setPianoVolume,
     mutedStates,
     toggleMute,
     togglePlayPause,

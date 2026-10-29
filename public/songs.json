@@ -128,6 +128,44 @@
     ]
   },
   {
+    "id": "jinglebell-rock",
+    "title": "Jingle Bell Rock",
+    "hidden": false,
+    "notes": [
+      "The tracks are Verse 1, Verse 2, Bridge, then Chorus."
+    ],
+    "artist": "Joseph Carleton Beal & James Ross Boothe",
+    "tempoLabel": "Speed:",
+    "partLabel": "Part:",
+    "sheetMusic": "",
+    "key": "",
+    "sections": [
+      {
+        "id": "full-tempo",
+        "name": "Full Speed",
+        "beat": "/songs/jinglebell-rock/normal/beat.mp3",
+        "piano": "/songs/jinglebell-rock/normal/piano.mp3",
+        "stems": [
+          {
+            "id": "high",
+            "name": "High",
+            "file": "/songs/jinglebell-rock/normal/high.mp3"
+          },
+          {
+            "id": "mid",
+            "name": "Mid",
+            "file": "/songs/jinglebell-rock/normal/mid.mp3"
+          },
+          {
+            "id": "low",
+            "name": "Low",
+            "file": "/songs/jinglebell-rock/normal/low.mp3"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "type": "link",
     "name": "Is He Worthy",
     "url": "https://drive.google.com/drive/folders/1QtAverSbaC0yge4xwE6Nun7Ew-8hPQ5G"

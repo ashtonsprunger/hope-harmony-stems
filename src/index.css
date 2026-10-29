@@ -93,3 +93,21 @@ input[type="range"]::-moz-range-thumb {
   background: #3b82f6;
   box-shadow: 0 0 10px rgba(59, 130, 246, 0.6), 0 2px 5px rgba(0, 0, 0, 0.4);
 }
+
+/* Inverted slider thumb for dark hero card */
+input[type="range"].slider-inverted::-webkit-slider-thumb,
+.dark input[type="range"].slider-inverted::-webkit-slider-thumb {
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4), 0 0 8px rgba(255, 255, 255, 0.35);
+}
+
+input[type="range"].slider-inverted:active::-webkit-slider-thumb,
+.dark input[type="range"].slider-inverted:active::-webkit-slider-thumb {
+  background: #e2e8f0;
+}
+
+input[type="range"].slider-inverted::-moz-range-thumb,
+.dark input[type="range"].slider-inverted::-moz-range-thumb {
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
