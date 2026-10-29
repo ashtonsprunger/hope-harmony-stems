@@ -80,7 +80,7 @@ export default function PlaybackBar({
   return (
     <div
       ref={playbackBarRef}
-      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800/90 shadow-[0_-10px_35px_rgba(0,0,0,0.12)] dark:shadow-none px-4 py-3 sm:py-4 transition-colors duration-200"
+      className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-200 dark:border-slate-800/90 shadow-[0_-10px_35px_rgba(0,0,0,0.12)] dark:shadow-none px-4 sm:px-6 py-3 sm:py-4 transition-colors duration-200"
     >
       <div className="max-w-4xl mx-auto">
         {/* Loading error warning */}
@@ -121,8 +121,8 @@ export default function PlaybackBar({
         )}
 
         {/* Timeline Scrubber */}
-        <div className="flex items-center gap-3 sm:gap-4 mb-2.5 sm:mb-3">
-          <span className="text-xs sm:text-sm font-mono font-bold text-slate-500 dark:text-slate-400 min-w-[3.5rem] sm:min-w-[4.25rem] text-right shrink-0">
+        <div className="flex items-center gap-2.5 sm:gap-3.5 mb-2.5 sm:mb-3">
+          <span className="text-xs sm:text-sm font-mono tabular-nums font-bold text-slate-500 dark:text-slate-400 text-left shrink-0">
             {currentMeasure !== undefined && currentMeasure !== null
               ? `${currentMeasure}.${currentBeat || 1}`
               : formatTime(currentTime)}
@@ -144,7 +144,7 @@ export default function PlaybackBar({
             />
           </div>
 
-          <span className="text-xs sm:text-sm font-mono font-bold text-slate-500 dark:text-slate-400 min-w-[3.5rem] sm:min-w-[4.25rem] text-left shrink-0">
+          <span className="text-xs sm:text-sm font-mono tabular-nums font-bold text-slate-500 dark:text-slate-400 text-right shrink-0">
             {currentMeasure !== undefined && currentMeasure !== null
               ? `${totalMeasures || 99}`
               : formatTime(duration)}
