@@ -80,7 +80,7 @@ export default function Header({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <h1 className="font-['Oswald',sans-serif] uppercase font-bold text-lg sm:text-2xl tracking-wide text-slate-900 dark:text-white truncate">
-                    {currentSong.title}
+                    {currentSong.title || currentSong.name}
                   </h1>
                   {currentSong.key && (
                     <span className="text-[11px] px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 font-mono font-semibold border border-blue-200 dark:border-blue-500/30 shrink-0">

@@ -1,5 +1,88 @@
 [
   {
+    "id": "song-order",
+    "type": "order",
+    "title": "Proposed Song Order?",
+    "items": [
+      {
+        "title": "Carol of the Bells",
+        "details": "Choir"
+      },
+      {
+        "title": "12 Days of Christmas",
+        "details": "Choir"
+      },
+      {
+        "title": "Have Yourself a Merry Little Christmas",
+        "details": "Solos — Lead: Ethan, Piano: Ashton"
+      },
+      {
+        "title": "Jingle Bell Rock",
+        "details": "Lead: Kate S. & Zoe, BGVs: Brooke, Kate O., Autumn / Sophie, Piano: Ashton"
+      },
+      {
+        "title": "Mele Kalikimaka",
+        "details": "Vocals: Girls, Ukulele: Ashton"
+      },
+      {
+        "title": "White Christmas",
+        "details": "Vocals: Guys, Guitar: Ashton"
+      },
+      {
+        "title": "Matthew's Begats",
+        "details": "Kids — Vocals: Kids, Guitar: Ashton"
+      },
+      {
+        "title": "Away in a Manger",
+        "details": "Kids — Vocals: Kids, Guitar: Ashton"
+      },
+      {
+        "title": "O Come, O Come, Emmanuel",
+        "details": "Choir"
+      },
+      {
+        "title": "God Rest Ye Merry, Gentlemen",
+        "details": "Choir"
+      },
+      {
+        "title": "Go, Tell It on the Mountain",
+        "details": "Choir"
+      },
+      {
+        "title": "What Child Is This?",
+        "details": "Instrumental: Guitar — Ashton"
+      },
+      {
+        "title": "We Three Kings",
+        "details": "Lead: Autumn / Sophie on V3, Harmony: Sophie, Guitar: Ashton"
+      },
+      {
+        "title": "Mary, Did You Know?",
+        "details": "Lead: Brooke, Harmonies: Autumn & Sophie, Guitar: Ashton"
+      },
+      {
+        "title": "Lo, How a Rose E'er Blooming",
+        "details": "Quartet SATB — Soprano: Autumn, Alto: Brooke, Tenor: Ashton, Bass: Isaac"
+      },
+      {
+        "title": "Noel",
+        "details": "Solos — Lead: Sophie, Piano: Ashton"
+      },
+      {
+        "title": "Is He Worthy?",
+        "details": "Lead: Ashton, Harmony: Sophie, Vocals: Choir, Piano: Ashton"
+      },
+      {
+        "title": "O Holy Night",
+        "details": "Choir"
+      },
+      {
+        "title": "Silent Night",
+        "details": "Choir"
+      }
+    ]
+  },
+  {
     "id": "12-days",
     "title": "12 Days of Christmas",
     "hidden": false,
@@ -11,6 +94,7 @@
     "partLabel": "Part:",
     "sheetMusic": "/songs/12-days/12-days.pdf",
     "key": "",
+    "lineup": [],
     "sections": [
       {
         "id": "full-tempo",
@@ -97,6 +181,7 @@
     "partLabel": "Part:",
     "sheetMusic": "/songs/o-come-o-come-emmanuel/o-come-o-come-emmanuel.pdf",
     "key": "",
+    "lineup": [],
     "sections": [
       {
         "id": "full-tempo",
@@ -138,7 +223,12 @@
     "tempoLabel": "Speed:",
     "partLabel": "Part:",
     "sheetMusic": "",
-    "key": "",
+    "key": "G",
+    "lineup": [
+      "Lead: Kate S. & Zoe (switching lead)",
+      "Background Vocals (\"ooo's\"): Brooke, Kate O., Autumn / Sophie (tentative, 3+ vocalists)",
+      "Instrument: Piano (Ashton)"
+    ],
     "sections": [
       {
         "id": "full-tempo",
@@ -167,7 +257,152 @@
   },
   {
     "type": "link",
-    "name": "Is He Worthy",
-    "url": "https://drive.google.com/drive/folders/1QtAverSbaC0yge4xwE6Nun7Ew-8hPQ5G"
+    "name": "Is He Worthy?",
+    "url": "https://drive.google.com/drive/folders/1QtAverSbaC0yge4xwE6Nun7Ew-8hPQ5G",
+    "key": "B",
+    "lineup": [
+      "Lead: Ashton",
+      "Harmony: Sophie",
+      "Vocals: Choir",
+      "Instrument: Piano (Ashton)"
+    ]
+  },
+  {
+    "title": "We Three Kings",
+    "disabled": true,
+    "key": "Bm → C#m",
+    "lineup": [
+      "Lead: Autumn (Sophie on Verse 3)",
+      "Harmony: Sophie",
+      "Instrument: Guitar (Ashton)"
+    ],
+    "notes": [
+      "V1: Autumn solo → Refrain",
+      "V2: Both (lead & harmony) → Refrain",
+      "V3: Sophie lead → Refrain (back to Autumn lead, Sophie harmony)",
+      "V4: Both → Refrain (key change to C#m)",
+      "(Slight pause / breath before V5)",
+      "V5: 1st half Autumn solo, 2nd half harmony joins → Refrain",
+      "Tag: \"Westward leading...\""
+    ]
+  },
+  {
+    "title": "Mary, Did You Know?",
+    "disabled": true,
+    "key": "Dm",
+    "lineup": [
+      "Lead: Brooke",
+      "Harmonies: Autumn & Sophie",
+      "Instrument: Guitar (Ashton)"
+    ],
+    "notes": [
+      "Bridge: Harmonies enter (Autumn on high harmony, Sophie on low harmony).",
+      "Final Verse: Harmonies drop out while Brooke sings solo.",
+      "Last Line: Harmonies rejoin (Sophie on high harmony, Autumn right above Brooke). Can play around with moving harmonies on the last chord."
+    ]
+  },
+  {
+    "title": "White Christmas",
+    "disabled": true,
+    "key": "",
+    "lineup": [
+      "Vocals: Guys",
+      "Instrument: Guitar (Ashton)"
+    ]
+  },
+  {
+    "title": "Matthew's Begats",
+    "disabled": true,
+    "key": "A",
+    "lineup": [
+      "Vocals: Kids",
+      "Instrument: Guitar (Ashton)"
+    ]
+  },
+  {
+    "title": "Away in a Manger",
+    "disabled": true,
+    "key": "D",
+    "lineup": [
+      "Vocals: Kids",
+      "Instrument: Guitar (Ashton)"
+    ]
+  },
+  {
+    "title": "Have Yourself a Merry Little Christmas",
+    "disabled": true,
+    "key": "",
+    "lineup": [
+      "Lead: Ethan",
+      "Instrument: Piano (Ashton)"
+    ]
+  },
+  {
+    "title": "Mele Kalikimaka",
+    "disabled": true,
+    "key": "",
+    "lineup": [
+      "Vocals: Girls",
+      "Instrument: Ukulele (Ashton — shares guitar mic)"
+    ]
+  },
+  {
+    "title": "What Child Is This?",
+    "disabled": true,
+    "key": "",
+    "lineup": [
+      "Instrumental: Guitar (Ashton)"
+    ]
+  },
+  {
+    "title": "Lo, How a Rose E'er Blooming",
+    "disabled": true,
+    "key": "",
+    "lineup": [
+      "Quartet (SATB)",
+      "Soprano: Autumn",
+      "Alto: Brooke",
+      "Tenor: Ashton",
+      "Bass: Isaac"
+    ]
+  },
+  {
+    "title": "Noel",
+    "disabled": true,
+    "key": "C#",
+    "lineup": [
+      "Lead: Sophie",
+      "Instrument: Piano (Ashton)"
+    ]
+  },
+  {
+    "title": "Carol of the Bells",
+    "disabled": true,
+    "key": "",
+    "lineup": []
+  },
+  {
+    "title": "God Rest Ye Merry, Gentlemen",
+    "disabled": true,
+    "key": "",
+    "lineup": []
+  },
+  {
+    "title": "Silent Night",
+    "disabled": true,
+    "key": "",
+    "lineup": []
+  },
+  {
+    "title": "O Holy Night",
+    "disabled": true,
+    "key": "",
+    "lineup": []
+  },
+  {
+    "title": "Go, Tell It on the Mountain",
+    "disabled": true,
+    "key": "",
+    "lineup": []
   }
 ]

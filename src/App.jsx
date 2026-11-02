@@ -6,12 +6,25 @@ import InstallBanner from './components/InstallBanner';
 import { usePwaInstall } from './hooks/usePwaInstall';
 import { Loader2, AlertCircle } from 'lucide-react';
 
+function isOrderItem(song) {
+  const t = typeof song?.type === 'string' ? song.type.trim().toLowerCase() : '';
+  return t === 'order' || t === 'setlist' || t === 'song-order' || t === 'program';
+}
+
+function getSongRouteId(song) {
+  if (!song) return '';
+  if (song.id) return String(song.id).trim();
+  if (isOrderItem(song)) return 'song-order';
+  return '';
+}
+
 export default function App() {
   const [songs, setSongs] = useState([]);
   const [selectedSong, setSelectedSong] = useState(null);
   const [isLoadingSongs, setIsLoadingSongs] = useState(true);
   const [songsError, setSongsError] = useState(null);
   const songsRef = useRef([]);
+  const navStackRef = useRef([]);
 
   // PWA installation state & handlers
   const { canInstall, showBanner, promptInstall, dismissPrompt } = usePwaInstall();
@@ -81,16 +94,27 @@ export default function App() {
   useEffect(() => {
     const handleNavigation = () => {
       const hash = window.location.hash.replace('#', '');
+      setIsSheetOpen(false);
+      setIsSheetZoomed(false);
       if (!hash) {
+        navStackRef.current = [];
         setSelectedSong(null);
         window.scrollTo({ top: 0, behavior: 'smooth' });
         return;
       }
       if (songsRef.current.length > 0) {
-        const matched = songsRef.current.find((s) => s.id === hash);
-        if (matched && matched.type !== 'link' && !matched.url) {
+        const matched = songsRef.current.find(
+          (s) => getSongRouteId(s) === hash
+        );
+        if (matched && !matched.disabled && matched.type !== 'link' && !matched.url) {
+          const topPrev = navStackRef.current[navStackRef.current.length - 1];
+          if (topPrev && getSongRouteId(topPrev) === hash) {
+            navStackRef.current.pop();
+          }
           setSelectedSong(matched);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
+          navStackRef.current = [];
           setSelectedSong(null);
         }
       }
@@ -137,8 +161,10 @@ export default function App() {
         // Check if there is a hash matching a song id in the URL
         const hash = window.location.hash.replace('#', '');
         if (hash) {
-          const matched = data.find((s) => s.id === hash);
-          if (matched && matched.type !== 'link' && !matched.url) {
+          const matched = data.find(
+            (s) => getSongRouteId(s) === hash
+          );
+          if (matched && !matched.disabled && matched.type !== 'link' && !matched.url) {
             setSelectedSong(matched);
           }
         }
@@ -155,22 +181,36 @@ export default function App() {
 
   // Handle song selection
   const handleSelectSong = (song) => {
+    if (!song || song.disabled === true || song.disabled === 'true') {
+      return;
+    }
     if (song.type === 'link' || song.url) {
       window.open(song.url, '_blank', 'noopener,noreferrer');
       return;
     }
+    const targetId = getSongRouteId(song);
+    const currentId = getSongRouteId(selectedSong);
+    if (selectedSong && currentId === targetId && selectedSong === song) {
+      return;
+    }
+    if (selectedSong) {
+      navStackRef.current.push(selectedSong);
+    }
     setSelectedSong(song);
-    try {
-      window.history.pushState({ appPage: 'song', songId: song.id }, '', '#' + song.id);
-    } catch (e) {
-      window.location.hash = song.id;
+    if (targetId) {
+      try {
+        window.history.pushState({ appPage: 'song', songId: targetId }, '', '#' + targetId);
+      } catch (e) {
+        window.location.hash = targetId;
+      }
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Back to song list
+  // Back to previous view or song list
   const handleBackToSongs = () => {
-    setSelectedSong(null);
+    const prevSong = navStackRef.current.length > 0 ? navStackRef.current.pop() : null;
+    setSelectedSong(prevSong);
     setIsSheetOpen(false);
     setIsSheetZoomed(false);
     if (window.location.hash) {
@@ -178,9 +218,17 @@ export default function App() {
         window.history.back();
       } catch (e) {
         try {
-          window.history.replaceState({ appPage: 'list' }, '', window.location.pathname + window.location.search);
+          const prevId = getSongRouteId(prevSong);
+          const fallbackUrl = prevId
+            ? '#' + prevId
+            : window.location.pathname + window.location.search;
+          window.history.replaceState(
+            prevId ? { appPage: 'song', songId: prevId } : { appPage: 'list' },
+            '',
+            fallbackUrl
+          );
         } catch (err) {
-          window.location.hash = '';
+          window.location.hash = getSongRouteId(prevSong);
         }
       }
     }
@@ -218,6 +266,8 @@ export default function App() {
         ) : selectedSong ? (
           <SongPlayer
             song={selectedSong}
+            songs={songs}
+            onSelectSong={handleSelectSong}
             onBackToSongs={handleBackToSongs}
             isSheetOpen={isSheetOpen}
             onToggleSheet={handleToggleSheet}
