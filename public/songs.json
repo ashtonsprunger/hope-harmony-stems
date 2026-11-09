@@ -18,7 +18,7 @@
       },
       {
         "title": "Jingle Bell Rock",
-        "details": "Lead: Kate S. & Zoe, BGVs: Brooke, Kate O., Autumn / Sophie, Piano: Ashton"
+        "details": "Lead: Kate S., High: Autumn, Mid: Zoe, Low: Brooke, Piano: Ashton"
       },
       {
         "title": "Mele Kalikimaka",
@@ -225,8 +225,10 @@
     "sheetMusic": "",
     "key": "G",
     "lineup": [
-      "Lead: Kate S. & Zoe (switching lead)",
-      "Background Vocals (\"ooo's\"): Brooke, Kate O., Autumn / Sophie (tentative, 3+ vocalists)",
+      "Lead: Kate S.",
+      "High: Autumn",
+      "Mid: Zoe",
+      "Low: Brooke",
       "Instrument: Piano (Ashton)"
     ],
     "sections": [
