@@ -120,6 +120,11 @@
             "id": "bass",
             "name": "Bass",
             "file": "/songs/12-days/normal/bass.mp3"
+          },
+          {
+            "id": "5-golden-rings",
+            "name": "5 Golden Rings",
+            "file": "/songs/12-days/normal/5-golden-rings.mp3"
           }
         ]
       },
@@ -147,6 +152,11 @@
             "id": "bass",
             "name": "Bass",
             "file": "/songs/12-days/slow/bass.mp3"
+          },
+          {
+            "id": "5-golden-rings",
+            "name": "5 Golden Rings",
+            "file": "/songs/12-days/slow/5-golden-rings.mp3"
           }
         ]
       }
