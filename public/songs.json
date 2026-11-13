@@ -268,6 +268,50 @@
     ]
   },
   {
+    "id": "white-christmas",
+    "title": "White Christmas",
+    "hidden": false,
+    "notes": [],
+    "artist": "Irving Berlin / The Drifters",
+    "tempoLabel": "Speed:",
+    "partLabel": "Part:",
+    "sheetMusic": "",
+    "key": "",
+    "lineup": [
+      "Vocals: Guys",
+      "Instrument: Guitar (Ashton)"
+    ],
+    "sections": [
+      {
+        "id": "full-tempo",
+        "name": "Full Speed",
+        "beat": "/songs/white-christmas/normal/beat.mp3",
+        "stems": [
+          {
+            "id": "tenor-1",
+            "name": "Tenor 1",
+            "file": "/songs/white-christmas/normal/tenor-1.mp3"
+          },
+          {
+            "id": "tenor-2",
+            "name": "Tenor 2",
+            "file": "/songs/white-christmas/normal/tenor-2.mp3"
+          },
+          {
+            "id": "baritone",
+            "name": "Baritone",
+            "file": "/songs/white-christmas/normal/baritone.mp3"
+          },
+          {
+            "id": "bass",
+            "name": "Bass",
+            "file": "/songs/white-christmas/normal/bass.mp3"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "type": "link",
     "name": "Is He Worthy?",
     "url": "https://drive.google.com/drive/folders/1QtAverSbaC0yge4xwE6Nun7Ew-8hPQ5G",
@@ -311,15 +355,6 @@
       "Bridge: Harmonies enter (Autumn on high harmony, Sophie on low harmony).",
       "Final Verse: Harmonies drop out while Brooke sings solo.",
       "Last Line: Harmonies rejoin (Sophie on high harmony, Autumn right above Brooke). Can play around with moving harmonies on the last chord."
-    ]
-  },
-  {
-    "title": "White Christmas",
-    "disabled": true,
-    "key": "",
-    "lineup": [
-      "Vocals: Guys",
-      "Instrument: Guitar (Ashton)"
     ]
   },
   {
