@@ -9,8 +9,8 @@
         "details": "Choir"
       },
       {
-        "title": "Have Yourself a Merry Little Christmas",
-        "details": "Solos — Lead: Ethan, Piano: Ashton"
+        "title": "Let It Snow",
+        "details": "Solos — Lead: Ethan, Guitar: Ashton"
       },
       {
         "title": "Jingle Bell Rock",
@@ -376,12 +376,12 @@
     ]
   },
   {
-    "title": "Have Yourself a Merry Little Christmas",
+    "title": "Let It Snow",
     "disabled": true,
     "key": "",
     "lineup": [
       "Lead: Ethan",
-      "Instrument: Piano (Ashton)"
+      "Instrument: Guitar (Ashton)"
     ]
   },
   {
